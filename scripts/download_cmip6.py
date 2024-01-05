@@ -14,16 +14,16 @@ import namelist
 # A sample set of scripts for obtaining GFDL-CM4 ssp585 scenario output is provided.
 # Make sure you have enough space in the current directory.
 # Moves all output to the base directory described in the namelist.
-fns = glob.glob('%s/scripts/GFDL-CM4/*.sh' % namelist.src_directory)
+fns = glob.glob('%s/scripts/corrupted_file/*.sh' % namelist.src_directory)
 for i in range(len(fns)):
     cmd = 'bash %s -s' % fns[i]
     os.system(cmd)
 
-fn_base = namelist.base_directory
+fn_base = '/glade/scratch/abolivar/tc_risk/input/EC-Earth3P/r1i1p1f1'
 os.makedirs(fn_base, exist_ok = True)
 
 # Move all downloaded files to namelist.base_directory.
-fns = glob.glob('%s/*GFDL-CM4*.nc' % namelist.src_directory)
+fns = glob.glob('%s/*EC-Earth3P*.nc' % namelist.src_directory)
 for i in range(len(fns)):
     cmd = 'mv %s %s/' % (fns[i], fn_base)
     os.system(cmd)

@@ -9,6 +9,7 @@ import numpy as np
 import os
 import xarray as xr
 import time
+import pandas as pd
 
 import namelist
 from intensity import coupled_fast, ocean
@@ -104,6 +105,7 @@ def run_tracks(year, n_tracks, b):
     T_s = namelist.total_track_time_days * 24 * 60 * 60     # total time to run tracks
     fn_wnd_stat = env_wind.get_env_wnd_fn()
     ds_wnd = xr.open_dataset(fn_wnd_stat)
+
     for i in range(12):
         dt_month = datetime.datetime(year, i + 1, 15)
         ds_dt_month = input.convert_from_datetime(ds_wnd, [dt_month])[0]
@@ -131,6 +133,8 @@ def run_tracks(year, n_tracks, b):
     tc_env_wnds = np.full((n_tracks, n_steps, cpl_fast[0].nWLvl), np.nan)
     tc_month = np.full(n_tracks, np.nan)
     tc_basin = np.full(n_tracks, "", dtype = 'U2')
+    seeds_df_list = []
+    tcs_df_list = []
     while nt < n_tracks:
         seed_passed = False
         while not seed_passed:
@@ -145,8 +149,8 @@ def run_tracks(year, n_tracks, b):
             gen_lat = np.arcsin(np.random.uniform(y_min, y_max, 1)[0]) * 180 / np.pi
             while f_b.ev(gen_lon, gen_lat) < 1e-2:
                 gen_lon = np.random.uniform(b_bounds[0], b_bounds[2], 1)[0]
-                gen_lat = np.random.uniform(b_bounds[1], b_bounds[3], 1)[0]
-
+                gen_lat = np.arcsin(np.random.uniform(y_min, y_max, 1)[0]) * 180 / np.pi
+            
             # Randomly seed the month.
             month_seed = np.random.randint(1, 13)
             fast = cpl_fast[month_seed - 1]
@@ -165,11 +169,13 @@ def run_tracks(year, n_tracks, b):
             rand_lowlat = np.random.uniform(0, 1, 1)[0]
             if (np.nanmax(basin_val) > 1e-3) and (rand_lowlat < prob_lowlat):
                 n_seeds[basin_idx, month_seed-1] += 1
+                seed_df = pd.DataFrame([[gen_lat,gen_lon,month_seed,year]],columns=['lat','lon','month','year'])
+                seeds_df_list.append(seed_df)
                 if (pi_gen > 35):
                     seed_passed = True
-
         # Set the initial value of m to a function of relative humidity.
         v_init = namelist.seed_v_init_ms + np.random.randn(1)[0]
+        rh_init = float(m_init_fx[month_seed-1].ev(gen_lon, gen_lat))
         rh_init = float(m_init_fx[month_seed-1].ev(gen_lon, gen_lat))
         m_init = np.maximum(0, namelist.f_mInit(rh_init))
         fast.h_bl = namelist.atm_bl_depth[basin_ids[basin_idx]]
@@ -207,7 +213,13 @@ def run_tracks(year, n_tracks, b):
                 tc_month[nt] = month_seed
                 tc_basin[nt] = basin_ids[basin_idx]
                 nt += 1
-    return((tc_lon, tc_lat, tc_v, tc_m, tc_vmax, tc_env_wnds, tc_month, tc_basin, n_seeds))
+        else:
+            tcs_df = pd.DataFrame([[gen_lat,gen_lon,month_seed,year]],columns=['lat','lon','month','year'])
+            tcs_df_list.append(tcs_df)
+
+    seed_tries = pd.concat(seeds_df_list)
+    tc_tries = pd.concat(tcs_df_list)
+    return((tc_lon, tc_lat, tc_v, tc_m, tc_vmax, tc_env_wnds, tc_month, tc_basin, n_seeds, seed_tries, tc_tries))
 
 """
 Runs the downscaling model in basin "basin_id" according to the
@@ -241,6 +253,9 @@ def run_downscaling(basin_id):
     tc_years = np.concatenate([[i+yearS]*out[i][0].shape[0] for i in range(len(out))], axis = 0)
     n_seeds = np.array([x[8] for x in out])
 
+    seed_tries = pd.concat([x[9] for x in out], axis = 0)
+    tc_tries = pd.concat([x[10] for x in out], axis = 0)
+
     total_time_s = namelist.total_track_time_days*24*60*60
     n_steps_output = int(total_time_s / namelist.output_interval_s) + 1
     ts_output = np.linspace(0, total_time_s, n_steps_output)
@@ -262,9 +277,11 @@ def run_downscaling(basin_id):
                                      seeds_per_month = (["year", "basin", "month"], n_seeds)),
                     coords = dict(n_trk = range(tc_lon.shape[0]), time = ts_output,
                                   year = yr_trks, basin = basin_ids, month = list(range(1, 13))))
-
+ 
     os.makedirs('%s/%s' % (namelist.base_directory, namelist.exp_name), exist_ok = True)
     fn_trk_out = fn_tracks_duplicates(get_fn_tracks(b))
+    seed_tries.to_csv('%s/%s/seed_tries_%s.csv' % (namelist.output_directory, namelist.exp_name, namelist.exp_prefix), mode = 'w')
+    tc_tries.to_csv('%s/%s/tc_tries_%s.csv' % (namelist.output_directory, namelist.exp_name, namelist.exp_prefix), mode = 'w')
     ds.to_netcdf(fn_trk_out, mode = 'w')
     print('Saved %s' % fn_trk_out)
     print(time.time() - s)

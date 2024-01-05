@@ -124,6 +124,7 @@ class BetaAdvectionTrack:
         except np.linalg.LinAlgError as err:
             print(self.dt_start)
             return np.zeros(self.nWLvl)
+        
         wnds = wnd_mean + np.matmul(wnd_A, self.Fs_i(ts))
         return wnds
 

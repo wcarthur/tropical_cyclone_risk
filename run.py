@@ -12,7 +12,7 @@ if __name__ == '__main__':
     shutil.copyfile('./namelist.py', '%s/namelist.py' % f_base)
 
     generate_land_masks.generate_land_masks()
-    compute.compute_downscaling_inputs()
+    #compute.compute_downscaling_inputs()
 
     print('Running tracks for basin %s...' % sys.argv[1])
     compute.run_downscaling(sys.argv[1])

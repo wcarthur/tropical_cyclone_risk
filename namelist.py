@@ -7,14 +7,14 @@ Namelist file that serves as the configuration file for the TC-risk model.
 
 ########################## File System Parameters ###########################
 src_directory = os.path.dirname(os.path.abspath(__file__))
-base_directory = '%s/data/era5' % src_directory
-output_directory = '%s/data/era5' % src_directory
-exp_name = 'test'
+base_directory = '/glade/scratch/abolivar/tc_risk/input/ERA5/standard'
+output_directory = '/glade/scratch/abolivar/tc_risk/output_3600_redux/constant_thermo/HadGEM3-GC31-LM'
+exp_name = 'r1i15p1f1'
 # For now, we support either 'GCM' or 'ERA5'. Different file types and variable
 # names can be added by modifying the "input.py" file and adding the appropriate
 # variable key words in the structure var_keys.
-dataset_type = 'ERA5' #'GCM'
-exp_prefix = 'era5' #GFDL-CM4_ssp585_r1i1p1f1'
+dataset_type = 'ERA5'
+exp_prefix = 'era5_HadGEM3-GC31-LM_r1i15p1f1'
 
 # Variable naming based on dataset_type.
 # 'sst' is sea-surface temperature (monthly-averaged)
@@ -26,20 +26,20 @@ exp_prefix = 'era5' #GFDL-CM4_ssp585_r1i1p1f1'
 var_keys = {'ERA5': {'sst': 'sst', 'mslp': 'sp', 'temp': 't',
                      'sp_hum': 'q', 'u': 'u', 'v': 'v',
                      'lvl': 'level', 'lon': 'longitude', 'lat': 'latitude'},
-            'GCM': {'sst': 'tos', 'mslp': 'psl', 'temp': 'ta',
+            'GCM': {'sst': 'tas', 'mslp': 'psl', 'temp': 'ta',
                     'sp_hum': 'hus', 'u': 'ua', 'v': 'va',
                     'lvl': 'plev', 'lon': 'lon', 'lat': 'lat'}}
 
 ########################### Parallelism Parameters ##########################
-n_procs = 16              # number of processes to use in dask
+n_procs = 36             # number of processes to use in dask
 
 ############################ TC Risk Parameters #############################
 """
 These parameters configure the dates for the TC-risk model.
 """
-start_year = 2016                     # year to start downscaling
+start_year = 1979                     # year to start downscaling
 start_month = 1                       # month of start_year to start downscaling
-end_year = 2021                       # year to stop downscaling
+end_year = 2014                       # year to stop downscaling
 end_month = 12                        # month of end_year to stop downscaling
 
 """
@@ -47,7 +47,7 @@ These parameters configure the output.
 """
 output_interval_s = 3600              # output interval of tracks, seconds (does not change time integration)
 total_track_time_days = 15            # total time to integrate tracks, days
-tracks_per_year = 20                  # total number of tracks to simulate per year
+tracks_per_year = 100                 # total number of tracks to simulate per year
 
 """
 These parameters configure thermodynamics and thermodynamic constants.

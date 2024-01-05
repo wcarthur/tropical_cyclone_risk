@@ -86,7 +86,7 @@ def gen_wind_mean_cov():
     # control over the files being opened.
     fns_ua = input._glob_prefix(input.get_u_key())
     fns_va = input._glob_prefix(input.get_v_key())
-
+   
     lazy_results = []
     for i in range(len(fns_ua)):
         lazy_result = dask.delayed(wnd_stat_wrapper)((fns_ua[i], fns_va[i]))
