@@ -119,15 +119,20 @@ class BetaAdvectionTrack:
 
         ct = self.datetime_start + datetime.timedelta(seconds = ts)
         wnd_mean, wnd_cov = self.interp_wnd_mean_cov(clon, clat, ct)
-        try:
-            wnd_A = np.linalg.cholesky(wnd_cov)
-        except np.linalg.LinAlgError as err:
-            print(self.dt_start)
-            return np.zeros(self.nWLvl)
-        # AJB: Uncomment 128 and comment out 129 for 6-hourly
-        #wnds = wnd_mean
-        wnds = wnd_mean + np.matmul(wnd_A, self.Fs_i(ts))
-        return wnds
+        
+        if data_ts == 'monthly':
+            try:
+                wnd_A = np.linalg.cholesky(wnd_cov)
+            except np.linalg.LinAlgError as err:
+                print(self.dt_start)
+                return np.zeros(self.nWLvl)
+            wnds = wnd_mean + np.matmul(wnd_A, self.Fs_i(ts))
+            return wnds
+
+        elif data_ts == '6-hourly':
+            # Use unmodified wind information from env_wnd file
+            wnds = wnd_mean
+            return wnds
 
     """ Calculate the translational speeds from the beta advection model """
     def _step_bam_track(self, clon, clat, ts, steering_coefs):

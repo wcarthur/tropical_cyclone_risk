@@ -62,7 +62,7 @@ def fn_tracks_duplicates(fn_trk):
 Generates "n_tracks" number of tropical cyclone tracks, in basin
 described by "b" (can be global), in the year.
 """
-def run_tracks(year, n_tracks, b, data_dt):
+def run_tracks(year, n_tracks, b, data_ts):
     # Load thermodynamic and ocean variables.
     print('AJB: {}'.format(year))
     fn_th = calc_thermo.get_fn_thermo()
@@ -104,7 +104,7 @@ def run_tracks(year, n_tracks, b, data_dt):
     fn_wnd_stat = env_wind.get_env_wnd_fn()
     ds_wnd = xr.open_dataset(fn_wnd_stat)
 
-    if data_dt == 'monthly':
+    if data_ts == 'monthly':
 +        cpl_fast = [0] * 12
 +        m_init_fx = [0] * 12
 +        n_seeds = np.zeros((len(basin_ids), 12))
@@ -124,7 +124,7 @@ def run_tracks(year, n_tracks, b, data_dt):
 +                                                    namelist.output_interval_s, T_s)
 +            cpl_fast[i].init_fields(lon, lat, chi_month, vpot_month, mld_month, strat_month)
 
-    if data_dt == '6-hourly':
+    if data_ts == '6-hourly':
         cpl_fast = [0] * 1460
         m_init_fx = [0] * 1460
         n_seeds = np.zeros((len(basin_ids), 1460))
@@ -186,10 +186,10 @@ def run_tracks(year, n_tracks, b, data_dt):
                 gen_lon = np.random.uniform(b_bounds[0], b_bounds[2], 1)[0]
                 gen_lat = np.arcsin(np.random.uniform(y_min, y_max, 1)[0]) * 180 / np.pi
             
-            if data_dt == 'monthly':
+            if data_ts == 'monthly':
                 # Randomly seed the month.
                 time_seed = np.random.randint(1, 13)
-            if data_dt == '6-hourly':
+            if data_ts == '6-hourly':
                 # Randomly seed the 6-hour timestep.
                 time_seed = np.random.randint(1,1461)
 
@@ -246,7 +246,7 @@ def run_tracks(year, n_tracks, b, data_dt):
             # of the time-integrated state (a parameter), we recompute it.
             # TODO: Remove this redudancy by pre-caclulating the env. wind.
             for i in range(len(track_lon)):
-                tc_env_wnds[nt, i, :] = fast._env_winds(track_lon[i], track_lat[i], fast.t_s[i])     
+                tc_env_wnds[nt, i, :] = fast._env_winds(track_lon[i], track_lat[i], fast.t_s[i], data_ts)     
             vmax = tc_wind.axi_to_max_wind(track_lon, track_lat, fast.dt_track,
                                            v_track, tc_env_wnds[nt, 0:n_time, :])
             if np.nanmax(vmax) >= namelist.seed_vmax_threshold_ms:
@@ -267,7 +267,7 @@ def run_tracks(year, n_tracks, b, data_dt):
 Runs the downscaling model in basin "basin_id" according to the
 settings in the namelist.txt file.
 """
-def run_downscaling(basin_id, data_dt):
+def run_downscaling(basin_id, data_ts):
     n_tracks = namelist.tracks_per_year   # number of tracks per year
     n_procs = namelist.n_procs
     b = basins.TC_Basin(basin_id)
@@ -276,7 +276,7 @@ def run_downscaling(basin_id, data_dt):
 
     lazy_results = []; f_args = [];
     for yr in range(yearS, yearE+1):
-        lazy_result = dask.delayed(run_tracks)(yr, n_tracks, b, data_dt)
+        lazy_result = dask.delayed(run_tracks)(yr, n_tracks, b, data_ts)
         f_args.append((yr, n_tracks, b))
         lazy_results.append(lazy_result)
 
@@ -304,10 +304,10 @@ def run_downscaling(basin_id, data_dt):
     yr_trks = np.stack([[x[0]] for x in f_args]).flatten()
     basin_ids = sorted([k for k in namelist.basin_bounds if k != 'GL'])
 
-    if data_dt == "monthly":
+    if data_ts == "monthly":
         name = "month"
         t = list(range(1,13))
-    if data_dt == "6-hourly":
+    if data_ts == "6-hourly":
         name = "timestep"
         t = list(range(1,1461))
 

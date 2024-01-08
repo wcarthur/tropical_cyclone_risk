@@ -31,7 +31,7 @@ var_keys = {'ERA5': {'sst': 'sst', 'mslp': 'sp', 'temp': 't',
                     'lvl': 'plev', 'lon': 'lon', 'lat': 'lat'}}
 
 ########################### Data Input Parameters ###########################
-data_dt = 'monthly'      # timestep of input data, 'monthly' or '6-hourly'
+data_ts = 'monthly'      # timestep of input data, 'monthly' or '6-hourly'
                          # resolutions are supported.
 ########################### Parallelism Parameters ##########################
 n_procs = 36             # number of processes to use in dask
