@@ -15,4 +15,4 @@ if __name__ == '__main__':
     #compute.compute_downscaling_inputs()
 
     print('Running tracks for basin %s...' % sys.argv[1])
-    compute.run_downscaling(sys.argv[1])
+    compute.run_downscaling(sys.argv[1], namelist.data_dt)

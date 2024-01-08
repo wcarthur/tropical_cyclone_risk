@@ -62,8 +62,9 @@ def fn_tracks_duplicates(fn_trk):
 Generates "n_tracks" number of tropical cyclone tracks, in basin
 described by "b" (can be global), in the year.
 """
-def run_tracks(year, n_tracks, b):
+def run_tracks(year, n_tracks, b, data_dt):
     # Load thermodynamic and ocean variables.
+    print('AJB: {}'.format(year))
     fn_th = calc_thermo.get_fn_thermo()
     ds = xr.open_dataset(fn_th)
     dt_year_start = datetime.datetime(year-1, 12, 31)
@@ -99,28 +100,60 @@ def run_tracks(year, n_tracks, b):
     b_bounds = b.get_bounds()
 
     # To randomly seed in both space and time, load data for each month in the year.
-    cpl_fast = [0] * 12
-    m_init_fx = [0] * 12
-    n_seeds = np.zeros((len(basin_ids), 12))
     T_s = namelist.total_track_time_days * 24 * 60 * 60     # total time to run tracks
     fn_wnd_stat = env_wind.get_env_wnd_fn()
     ds_wnd = xr.open_dataset(fn_wnd_stat)
 
-    for i in range(12):
-        dt_month = datetime.datetime(year, i + 1, 15)
-        ds_dt_month = input.convert_from_datetime(ds_wnd, [dt_month])[0]
-        vpot_month = np.nan_to_num(vpot.interp(time = ds_dt_month).data, 0)
-        rh_mid_month = rh_mid.interp(time = ds_dt_month).data
-        chi_month = chi.interp(time = ds_dt_month).data
-        chi_month[np.isnan(chi_month)] = 5
-        m_init_fx[i] = mat.interp2_fx(lon, lat, rh_mid_month)
-        chi_month = np.maximum(np.minimum(np.exp(np.log(chi_month + 1e-3) + namelist.log_chi_fac) + namelist.chi_fac, 5), 1e-5)
+    if data_dt == 'monthly':
++        cpl_fast = [0] * 12
++        m_init_fx = [0] * 12
++        n_seeds = np.zeros((len(basin_ids), 12))
 
-        mld_month = mat.interp_2d_grid(mld['lon'], mld['lat'], np.nan_to_num(mld[:, :, i]), lon, lat)
-        strat_month = mat.interp_2d_grid(strat['lon'], strat['lat'], np.nan_to_num(strat[:, :, i]), lon, lat)
-        cpl_fast[i] = coupled_fast.Coupled_FAST(fn_wnd_stat, b, ds_dt_month,
-                                                namelist.output_interval_s, T_s)
-        cpl_fast[i].init_fields(lon, lat, chi_month, vpot_month, mld_month, strat_month)
++        for i in range(12):
++            dt_month = datetime.datetime(year, i + 1, 15)
++            ds_dt_month = input.convert_from_datetime(ds_wnd, [dt_month])[0]
++            vpot_month = np.nan_to_num(vpot.interp(time = ds_dt_month).data, 0)
++            rh_mid_month = rh_mid.interp(time = ds_dt_month).data
++            chi_month = chi.interp(time = ds_dt_month).data
++            chi_month[np.isnan(chi_month)] = 5
++            m_init_fx[i] = mat.interp2_fx(lon, lat, rh_mid_month)
++            chi_month = np.maximum(np.minimum(np.exp(np.log(chi_month + 1e-3) + namelist.log_chi_fac) + namelist.chi_fac, 5), 1e-5)
+             mld_month = mat.interp_2d_grid(mld['lon'], mld['lat'], np.nan_to_num(mld[:, :, i]), lon, lat)
++            strat_month = mat.interp_2d_grid(strat['lon'], strat['lat'], np.nan_to_num(strat[:, :, i]), lon, lat)
++            cpl_fast[i] = coupled_fast.Coupled_FAST(fn_wnd_stat, b, ds_dt_month,
++                                                    namelist.output_interval_s, T_s)
++            cpl_fast[i].init_fields(lon, lat, chi_month, vpot_month, mld_month, strat_month)
+
+    if data_dt == '6-hourly':
+        cpl_fast = [0] * 1460
+        m_init_fx = [0] * 1460
+        n_seeds = np.zeros((len(basin_ids), 1460))
+
+        # AJB: Creating array of dates to draw from and removing leap day
+        start_date = datetime.datetime(year, 1, 1, 0)
+        end_date = datetime.datetime(year, 12, 31, 18)
+        interval = datetime.timedelta(hours=6)  # 6-hourly time interval
+
+        dates = [start_date + i * interval for i in range(int((end_date - start_date) / interval) + 1)
+                 if (((start_date + i * interval).month != 2) or (((start_date + i * interval).day) != 29))]
+
+        for i in range(1460):
+            dt_6hr = dates[i]
+            month_index = int(dt_6hr.month - 1)
+            ds_dt_6hr = input.convert_from_datetime(ds_wnd, [dt_6hr])[0]
+            print(i, ds_dt_6hr)
+            vpot_6hr = np.nan_to_num(vpot.interp(time = ds_dt_6hr).data, 0)
+            rh_mid_6hr = rh_mid.interp(time = ds_dt_6hr).data
+            chi_6hr = chi.interp(time = ds_dt_6hr).data
+            chi_6hr[np.isnan(chi_6hr)] = 5
+            m_init_fx[i] = mat.interp2_fx(lon, lat, rh_mid_6hr)
+            chi_6hr = np.maximum(np.minimum(np.exp(np.log(chi_6hr + 1e-3) + namelist.log_chi_fac) + namelist.chi_fac, 5), 1e-5)
+
+            mld_month = mat.interp_2d_grid(mld['lon'], mld['lat'], np.nan_to_num(mld[:, :, month_index]), lon, lat)
+            strat_month = mat.interp_2d_grid(strat['lon'], strat['lat'], np.nan_to_num(strat[:, :, month_index]), lon, lat)
+            cpl_fast[i] = coupled_fast.Coupled_FAST(fn_wnd_stat, b, ds_dt_6hr,
+                                                    namelist.output_interval_s, T_s)
+            cpl_fast[i].init_fields(lon, lat, chi_6hr, vpot_6hr, mld_month, strat_month)
 
     # Output vectors.
     nt = 0
@@ -133,8 +166,10 @@ def run_tracks(year, n_tracks, b):
     tc_env_wnds = np.full((n_tracks, n_steps, cpl_fast[0].nWLvl), np.nan)
     tc_month = np.full(n_tracks, np.nan)
     tc_basin = np.full(n_tracks, "", dtype = 'U2')
+    
     seeds_df_list = []
     tcs_df_list = []
+
     while nt < n_tracks:
         seed_passed = False
         while not seed_passed:
@@ -151,8 +186,13 @@ def run_tracks(year, n_tracks, b):
                 gen_lon = np.random.uniform(b_bounds[0], b_bounds[2], 1)[0]
                 gen_lat = np.arcsin(np.random.uniform(y_min, y_max, 1)[0]) * 180 / np.pi
             
-            # Randomly seed the month.
-            month_seed = np.random.randint(1, 13)
+            if data_dt == 'monthly':
+                # Randomly seed the month.
+                time_seed = np.random.randint(1, 13)
+            if data_dt == '6-hourly':
+                # Randomly seed the 6-hour timestep.
+                time_seed = np.random.randint(1,1461)
+
             fast = cpl_fast[month_seed - 1]
 
             # Find basin of genesis location and switch H_bl.
@@ -173,6 +213,7 @@ def run_tracks(year, n_tracks, b):
                 seeds_df_list.append(seed_df)
                 if (pi_gen > 35):
                     seed_passed = True
+
         # Set the initial value of m to a function of relative humidity.
         v_init = namelist.seed_v_init_ms + np.random.randn(1)[0]
         rh_init = float(m_init_fx[month_seed-1].ev(gen_lon, gen_lat))
@@ -219,13 +260,14 @@ def run_tracks(year, n_tracks, b):
 
     seed_tries = pd.concat(seeds_df_list)
     tc_tries = pd.concat(tcs_df_list)
+
     return((tc_lon, tc_lat, tc_v, tc_m, tc_vmax, tc_env_wnds, tc_month, tc_basin, n_seeds, seed_tries, tc_tries))
 
 """
 Runs the downscaling model in basin "basin_id" according to the
 settings in the namelist.txt file.
 """
-def run_downscaling(basin_id):
+def run_downscaling(basin_id, data_dt):
     n_tracks = namelist.tracks_per_year   # number of tracks per year
     n_procs = namelist.n_procs
     b = basins.TC_Basin(basin_id)
@@ -234,7 +276,7 @@ def run_downscaling(basin_id):
 
     lazy_results = []; f_args = [];
     for yr in range(yearS, yearE+1):
-        lazy_result = dask.delayed(run_tracks)(yr, n_tracks, b)
+        lazy_result = dask.delayed(run_tracks)(yr, n_tracks, b, data_dt)
         f_args.append((yr, n_tracks, b))
         lazy_results.append(lazy_result)
 
@@ -262,6 +304,13 @@ def run_downscaling(basin_id):
     yr_trks = np.stack([[x[0]] for x in f_args]).flatten()
     basin_ids = sorted([k for k in namelist.basin_bounds if k != 'GL'])
 
+    if data_dt == "monthly":
+        name = "month"
+        t = list(range(1,13))
+    if data_dt == "6-hourly":
+        name = "timestep"
+        t = list(range(1,1461))
+
     ds = xr.Dataset(data_vars = dict(lon_trks = (["n_trk", "time"], tc_lon),
                                      lat_trks = (["n_trk", "time"], tc_lat),
                                      u250_trks = (["n_trk", "time"], tc_env_wnds[:, :, 0]),
@@ -274,9 +323,9 @@ def run_downscaling(basin_id):
                                      tc_month = (["n_trk"], tc_months),
                                      tc_basins = (["n_trk"], tc_basins),                                     
                                      tc_years = (["n_trk"], tc_years),
-                                     seeds_per_month = (["year", "basin", "month"], n_seeds)),
+                                     seeds_per_month = (["year", "basin", name], n_seeds)),
                     coords = dict(n_trk = range(tc_lon.shape[0]), time = ts_output,
-                                  year = yr_trks, basin = basin_ids, month = list(range(1, 13))))
+                                  year = yr_trks, basin = basin_ids, month = t)))
  
     os.makedirs('%s/%s' % (namelist.base_directory, namelist.exp_name), exist_ok = True)
     fn_trk_out = fn_tracks_duplicates(get_fn_tracks(b))

@@ -124,7 +124,8 @@ class BetaAdvectionTrack:
         except np.linalg.LinAlgError as err:
             print(self.dt_start)
             return np.zeros(self.nWLvl)
-        
+        # AJB: Uncomment 128 and comment out 129 for 6-hourly
+        #wnds = wnd_mean
         wnds = wnd_mean + np.matmul(wnd_A, self.Fs_i(ts))
         return wnds
 

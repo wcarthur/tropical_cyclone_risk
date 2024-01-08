@@ -13,7 +13,7 @@ exp_name = 'r1i15p1f1'
 # For now, we support either 'GCM' or 'ERA5'. Different file types and variable
 # names can be added by modifying the "input.py" file and adding the appropriate
 # variable key words in the structure var_keys.
-dataset_type = 'ERA5'
+dataset_type = 'ERA5' # 'GCM'
 exp_prefix = 'era5_HadGEM3-GC31-LM_r1i15p1f1'
 
 # Variable naming based on dataset_type.
@@ -30,6 +30,9 @@ var_keys = {'ERA5': {'sst': 'sst', 'mslp': 'sp', 'temp': 't',
                     'sp_hum': 'hus', 'u': 'ua', 'v': 'va',
                     'lvl': 'plev', 'lon': 'lon', 'lat': 'lat'}}
 
+########################### Data Input Parameters ###########################
+data_dt = 'monthly'      # timestep of input data, 'monthly' or '6-hourly'
+                         # resolutions are supported.
 ########################### Parallelism Parameters ##########################
 n_procs = 36             # number of processes to use in dask
 

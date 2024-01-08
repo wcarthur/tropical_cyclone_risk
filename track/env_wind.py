@@ -166,6 +166,8 @@ Computes mean and covariance of environmental winds across a month.
 def calc_wnd_stat(ua, va, dt):
     cYear = dt.year
     cMonth = dt.month
+    
+    print('AJB: current yr/mon: '+str(cYear)+'/'+str(cMonth))
 
     if cMonth == 12:
         tEnd = datetime.datetime(cYear + 1, 1, 1)

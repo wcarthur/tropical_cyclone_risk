@@ -261,7 +261,7 @@ class Coupled_FAST(bam_track.BetaAdvectionTrack):
             m_init = self._init_m(np.asarray([clon, clat, v]), 0)
         else:
             m_init = m
-        res = solve_ivp(self.dydt, (0, self.total_time), np.asarray([clon, clat, v, m_init]),
+        res = solve_ivp(fun = self.dydt, t_span = (0, self.total_time), y0 = np.asarray([clon, clat, v, m_init]),
                         t_eval = np.linspace(0, self.total_time, self.total_steps),
                         events = tc_dissipates, max_step = 86400)
         return res
