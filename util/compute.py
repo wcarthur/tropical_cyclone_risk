@@ -105,24 +105,24 @@ def run_tracks(year, n_tracks, b, data_ts):
     ds_wnd = xr.open_dataset(fn_wnd_stat)
 
     if data_ts == 'monthly':
-+        cpl_fast = [0] * 12
-+        m_init_fx = [0] * 12
-+        n_seeds = np.zeros((len(basin_ids), 12))
+        cpl_fast = [0] * 12
+        m_init_fx = [0] * 12
+        n_seeds = np.zeros((len(basin_ids), 12))
 
-+        for i in range(12):
-+            dt_month = datetime.datetime(year, i + 1, 15)
-+            ds_dt_month = input.convert_from_datetime(ds_wnd, [dt_month])[0]
-+            vpot_month = np.nan_to_num(vpot.interp(time = ds_dt_month).data, 0)
-+            rh_mid_month = rh_mid.interp(time = ds_dt_month).data
-+            chi_month = chi.interp(time = ds_dt_month).data
-+            chi_month[np.isnan(chi_month)] = 5
-+            m_init_fx[i] = mat.interp2_fx(lon, lat, rh_mid_month)
-+            chi_month = np.maximum(np.minimum(np.exp(np.log(chi_month + 1e-3) + namelist.log_chi_fac) + namelist.chi_fac, 5), 1e-5)
-             mld_month = mat.interp_2d_grid(mld['lon'], mld['lat'], np.nan_to_num(mld[:, :, i]), lon, lat)
-+            strat_month = mat.interp_2d_grid(strat['lon'], strat['lat'], np.nan_to_num(strat[:, :, i]), lon, lat)
-+            cpl_fast[i] = coupled_fast.Coupled_FAST(fn_wnd_stat, b, ds_dt_month,
-+                                                    namelist.output_interval_s, T_s)
-+            cpl_fast[i].init_fields(lon, lat, chi_month, vpot_month, mld_month, strat_month)
+        for i in range(12):
+            dt_month = datetime.datetime(year, i + 1, 15)
+            ds_dt_month = input.convert_from_datetime(ds_wnd, [dt_month])[0]
+            vpot_month = np.nan_to_num(vpot.interp(time = ds_dt_month).data, 0)
+            rh_mid_month = rh_mid.interp(time = ds_dt_month).data
+            chi_month = chi.interp(time = ds_dt_month).data
+            chi_month[np.isnan(chi_month)] = 5
+            m_init_fx[i] = mat.interp2_fx(lon, lat, rh_mid_month)
+            chi_month = np.maximum(np.minimum(np.exp(np.log(chi_month + 1e-3) + namelist.log_chi_fac) + namelist.chi_fac, 5), 1e-5)
+            mld_month = mat.interp_2d_grid(mld['lon'], mld['lat'], np.nan_to_num(mld[:, :, i]), lon, lat)
+            strat_month = mat.interp_2d_grid(strat['lon'], strat['lat'], np.nan_to_num(strat[:, :, i]), lon, lat)
+            cpl_fast[i] = coupled_fast.Coupled_FAST(fn_wnd_stat, b, ds_dt_month,
+                                                    namelist.output_interval_s, T_s)
+            cpl_fast[i].init_fields(lon, lat, chi_month, vpot_month, mld_month, strat_month)
 
     if data_ts == '6-hourly':
         cpl_fast = [0] * 1460
@@ -193,7 +193,7 @@ def run_tracks(year, n_tracks, b, data_ts):
                 # Randomly seed the 6-hour timestep.
                 time_seed = np.random.randint(1,1461)
 
-            fast = cpl_fast[month_seed - 1]
+            fast = cpl_fast[time_seed - 1]
 
             # Find basin of genesis location and switch H_bl.
             basin_val = np.zeros(len(basin_ids))
@@ -208,16 +208,16 @@ def run_tracks(year, n_tracks, b, data_ts):
             prob_lowlat = np.power(np.minimum(np.maximum((np.abs(gen_lat) - namelist.lat_vort_fac) / 12.0, 0), 1), lat_vort_power)
             rand_lowlat = np.random.uniform(0, 1, 1)[0]
             if (np.nanmax(basin_val) > 1e-3) and (rand_lowlat < prob_lowlat):
-                n_seeds[basin_idx, month_seed-1] += 1
-                seed_df = pd.DataFrame([[gen_lat,gen_lon,month_seed,year]],columns=['lat','lon','month','year'])
+                n_seeds[basin_idx, time_seed-1] += 1
+                seed_df = pd.DataFrame([[gen_lat,gen_lon,time_seed,year]],columns=['lat','lon','month','year'])
                 seeds_df_list.append(seed_df)
                 if (pi_gen > 35):
                     seed_passed = True
 
         # Set the initial value of m to a function of relative humidity.
         v_init = namelist.seed_v_init_ms + np.random.randn(1)[0]
-        rh_init = float(m_init_fx[month_seed-1].ev(gen_lon, gen_lat))
-        rh_init = float(m_init_fx[month_seed-1].ev(gen_lon, gen_lat))
+        rh_init = float(m_init_fx[time_seed-1].ev(gen_lon, gen_lat))
+        rh_init = float(m_init_fx[time_seed-1].ev(gen_lon, gen_lat))
         m_init = np.maximum(0, namelist.f_mInit(rh_init))
         fast.h_bl = namelist.atm_bl_depth[basin_ids[basin_idx]]
         res = fast.gen_track(gen_lon, gen_lat, v_init, m_init)
@@ -251,11 +251,11 @@ def run_tracks(year, n_tracks, b, data_ts):
                                            v_track, tc_env_wnds[nt, 0:n_time, :])
             if np.nanmax(vmax) >= namelist.seed_vmax_threshold_ms:
                 tc_vmax[nt, 0:n_time] = vmax
-                tc_month[nt] = month_seed
+                tc_month[nt] = time_seed
                 tc_basin[nt] = basin_ids[basin_idx]
                 nt += 1
         else:
-            tcs_df = pd.DataFrame([[gen_lat,gen_lon,month_seed,year]],columns=['lat','lon','month','year'])
+            tcs_df = pd.DataFrame([[gen_lat,gen_lon,time_seed,year]],columns=['lat','lon','month','year'])
             tcs_df_list.append(tcs_df)
 
     seed_tries = pd.concat(seeds_df_list)
@@ -325,7 +325,7 @@ def run_downscaling(basin_id, data_ts):
                                      tc_years = (["n_trk"], tc_years),
                                      seeds_per_month = (["year", "basin", name], n_seeds)),
                     coords = dict(n_trk = range(tc_lon.shape[0]), time = ts_output,
-                                  year = yr_trks, basin = basin_ids, month = t)))
+                                  year = yr_trks, basin = basin_ids, month = t))
  
     os.makedirs('%s/%s' % (namelist.base_directory, namelist.exp_name), exist_ok = True)
     fn_trk_out = fn_tracks_duplicates(get_fn_tracks(b))
