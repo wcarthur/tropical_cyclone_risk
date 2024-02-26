@@ -110,10 +110,11 @@ def _load_var_daily(fn):
 
 def convert_from_datetime(ds, dts):
     # Convert the datetime array dts to the timestamps used by ds.
-    # Only supports np.datetime64 or cftime.DatetimeNoLeap to datetimes.
+    # Only supports np.datetime64, cftime.DatetimeNoLeap, or cftime.Datetime360Day to datetimes.
     # Necessary to convert between non-standard calendars (like no leap).
     if isinstance(np.array(ds['time'])[0], np.datetime64):
         adt = np.array([np.datetime64(str(x)) for x in np.array(dts)])
+    # If calendar is cftime.DatetimeNoLeap
     elif isinstance(np.array(ds['time'])[0], cftime.DatetimeNoLeap):
         adt = np.array([cftime.DatetimeNoLeap(x.year, x.month, x.day, x.hour) for x in np.array(dts)])
     else:
@@ -122,10 +123,11 @@ def convert_from_datetime(ds, dts):
 
 def convert_to_datetime(ds, dts):
     # Convert the timestamps types of ds to datetime timestamps.
-    # Only supports np.datetime64 or cftime.DatetimeNoLeap to datetimes.
+    # Only supports np.datetime64, cftime.DatetimeNoLeap, or cftime.Datetime360Day to datetimes.
     # Necessary to convert between non-standard calendars (like no leap).
     if isinstance(np.array(ds['time'])[0], np.datetime64):
         adt = np.array(dts.astype('datetime64[s]').tolist())
+    # If calendar is cftime.DatetimeNoLeap or cftime.Datetime360Day with monthly frequency data
     elif isinstance(np.array(ds['time'])[0], cftime.DatetimeNoLeap):
         adt = np.array([datetime.datetime(x.year, x.month, x.day, x.hour) for x in np.array(dts)])
     else:

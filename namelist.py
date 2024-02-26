@@ -26,10 +26,13 @@ exp_prefix = 'era5' #GFDL-CM4_ssp585_r1i1p1f1'
 var_keys = {'ERA5': {'sst': 'sst', 'mslp': 'sp', 'temp': 't',
                      'sp_hum': 'q', 'u': 'u', 'v': 'v',
                      'lvl': 'level', 'lon': 'longitude', 'lat': 'latitude'},
-            'GCM': {'sst': 'tos', 'mslp': 'psl', 'temp': 'ta',
+            'GCM': {'sst': 'tas', 'mslp': 'psl', 'temp': 'ta',
                     'sp_hum': 'hus', 'u': 'ua', 'v': 'va',
                     'lvl': 'plev', 'lon': 'lon', 'lat': 'lat'}}
 
+########################### Data Input Parameters ###########################
+data_ts = 'monthly'      # timestep of input data, 'monthly' or '6-hourly'
+                         # resolutions are supported.
 ########################### Parallelism Parameters ##########################
 n_procs = 16              # number of processes to use in dask
 

@@ -15,9 +15,9 @@ sys.path.append(parent)
 
 import namelist
 
-year_start = int(namelist.start_year)
-year_end = int(namelist.end_year)
-fn_base = namelist.base_directory
+year_start = 1979
+year_end = 2014
+fn_base = '/glade/scratch/abolivar/tc_risk/input/ERA5/standard'
 os.makedirs(fn_base, exist_ok = True)
 
 def request_file(fn, req_type, req):

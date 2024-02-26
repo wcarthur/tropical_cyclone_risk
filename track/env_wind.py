@@ -86,7 +86,7 @@ def gen_wind_mean_cov():
     # control over the files being opened.
     fns_ua = input._glob_prefix(input.get_u_key())
     fns_va = input._glob_prefix(input.get_v_key())
-
+   
     lazy_results = []
     for i in range(len(fns_ua)):
         lazy_result = dask.delayed(wnd_stat_wrapper)((fns_ua[i], fns_va[i]))
@@ -166,6 +166,8 @@ Computes mean and covariance of environmental winds across a month.
 def calc_wnd_stat(ua, va, dt):
     cYear = dt.year
     cMonth = dt.month
+    
+    print('AJB: current yr/mon: '+str(cYear)+'/'+str(cMonth))
 
     if cMonth == 12:
         tEnd = datetime.datetime(cYear + 1, 1, 1)
