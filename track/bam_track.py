@@ -137,8 +137,8 @@ class BetaAdvectionTrack:
 
         ct = self.datetime_start + datetime.timedelta(seconds=ts)
         wnd_mean, wnd_cov = self.interp_wnd_mean_cov(clon, clat, ct)
-        
-        if data_ts == 'monthly':
+
+        if namelist.data_ts == 'monthly':
             try:
                 wnd_A = np.linalg.cholesky(wnd_cov)
             except np.linalg.LinAlgError as err:
@@ -147,7 +147,7 @@ class BetaAdvectionTrack:
             wnds = wnd_mean + np.matmul(wnd_A, self.Fs_i(ts))
             return wnds
 
-        elif data_ts == '6-hourly':
+        elif namelist.data_ts == '6-hourly':
             # Use unmodified wind information from env_wnd file
             wnds = wnd_mean
             return wnds
