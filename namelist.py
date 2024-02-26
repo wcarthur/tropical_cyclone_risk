@@ -37,7 +37,7 @@ n_procs = 16              # number of processes to use in dask
 """
 These parameters configure the dates for the TC-risk model.
 """
-start_year = 2016                     # year to start downscaling
+start_year = 2001                     # year to start downscaling
 start_month = 1                       # month of start_year to start downscaling
 end_year = 2021                       # year to stop downscaling
 end_month = 12                        # month of end_year to stop downscaling
@@ -65,7 +65,7 @@ These parameters configure track and intensity constants.
 # Defines the steering levels (hPa) of the storm (see paper)
 # If 250- and 850-hPa, uses two steering levels.
 # If 250-, 500-, and 850-hPa, uses three steering levels.
-# The steering_coefficients ('steering_coefs') should have the same 
+# The steering_coefficients ('steering_coefs') should have the same
 # length as the number of levels.
 steering_levels = [250, 850]
 steering_coefs = [0.2, 0.8]           # constant steering coefficients if not coupled
@@ -83,12 +83,12 @@ seed_v_threshold_ms = 15              # seed v threshold over entire lifetime, m
 seed_vmax_threshold_ms = 18           # seed vmax threshold over entire lifetime, m/s
 # Atmospheric boundary layer depth (FAST), m
 atm_bl_depth = {'NA': 1400.0, 'EP': 1400.0, 'WP': 1800.0, 'AU': 1800.0,
-                'SI': 1600.0, 'SP': 2000.0, 'NI': 1500.0}
+                'SI': 1600.0, 'SP': 2000.0, 'NI': 1500.0, 'SH': 1800.0}
 log_chi_fac = 0.5                     # addition to chi in log space
 chi_fac = 1.3                         # addition to chi
 lat_vort_fac = 2                      # sets where vorticity threshold decays toward equator
 lat_vort_power = {'NA': 6, 'EP': 6,   # power decay towards the equator
-                  'WP': 3.5, 'AU': 6,
+                  'WP': 3.5, 'AU': 6, 'SH': 6,
                   'SI': 3, 'SP': 7, 'NI': 2.5}
 # Initial m based on large-scale relative humidity
 f_mInit = lambda rh: 0.20 / (1 + np.exp(-(rh - 0.55) * 10)) + 0.125
@@ -106,6 +106,7 @@ Identifiers: EP - Eastern Pacific
              NI - North Indian
              SI - South Indian
              SP - South Pacific
+             SH - Southern Hemisphere
              WP - Western Pacific
              GL - Global (no basin)
 """
@@ -115,6 +116,7 @@ basin_bounds = {'EP': ['180E', '0N', '290E', '60N'],
                 'SI': ['20E', '45S', '100E', '0S'],
                 'AU': ['100E', '45S', '180E', '0S'],
                 'SP': ['180E', '45S', '250E', '0S'],
+                'SH': ['20E', '45S', '250E', '0S'],
                 'WP': ['100E', '0N', '180E', '60N'],
                 'GL': ['0E', '90S', '360E', '90N']}
 

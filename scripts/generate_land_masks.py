@@ -12,7 +12,7 @@ def generate_land_masks():
     print('Generating land masks...')
     os.makedirs('land', exist_ok = True)
 
-    fns = ['land.nc', 'NA.nc', 'EP.nc', 'NI.nc', 'SI.nc'
+    fns = ['land.nc', 'NA.nc', 'EP.nc', 'NI.nc', 'SI.nc', 'SH.nc',
            'AU.nc', 'SP.nc', 'WP.nc', 'GL.nc']
     fn_exists = np.array([False]*len(fns))
     for i in range(len(fns)):
@@ -86,6 +86,13 @@ def generate_land_masks():
                         coords = dict(lon=lon_GL, lat=lat_GL))
     ds_SI = xr.Dataset(data_vars = dict(basin = SI_mask))
     ds_SI.to_netcdf('land/SI.nc')
+
+    # Southern Hemisphere basin
+    SH_mask = (lon_GL_grid >= 20) & (lon_GL_grid <= 250) & (lat_GL_grid >= -45) & (lat_GL_grid <= 0)
+    SH_mask = xr.DataArray(data = SH_mask & (~land_GL), dims = ["lat", "lon"],
+                        coords = dict(lon=lon_GL, lat=lat_GL))
+    ds_SH = xr.Dataset(data_vars = dict(basin = SH_mask))
+    ds_SH.to_netcdf('land/SH.nc')
 
     # Australia basin
     AU_mask = (lon_GL_grid >= 100) & (lon_GL_grid <= 170) & (lat_GL_grid >= -45) & (lat_GL_grid <= 0)
