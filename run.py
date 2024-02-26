@@ -5,6 +5,10 @@ import sys
 from scripts import generate_land_masks
 from util import compute
 
+import warnings
+
+warnings.filterwarnings("ignore", category=UserWarning)
+
 if __name__ == '__main__':
     f_base = '%s/%s/' % (namelist.output_directory, namelist.exp_name)
     os.makedirs(f_base, exist_ok = True)
