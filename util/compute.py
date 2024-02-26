@@ -199,7 +199,7 @@ def run_tracks(year, n_tracks, b):
             # of the time-integrated state (a parameter), we recompute it.
             # TODO: Remove this redudancy by pre-caclulating the env. wind.
             for i in range(len(track_lon)):
-                tc_env_wnds[nt, i, :] = fast._env_winds(track_lon[i], track_lat[i], fast.t_s[i])     
+                tc_env_wnds[nt, i, :] = fast._env_winds(track_lon[i], track_lat[i], fast.t_s[i])
             vmax = tc_wind.axi_to_max_wind(track_lon, track_lat, fast.dt_track,
                                            v_track, tc_env_wnds[nt, 0:n_time, :])
             if np.nanmax(vmax) >= namelist.seed_vmax_threshold_ms:
@@ -257,7 +257,7 @@ def run_downscaling(basin_id):
                                      m_trks = (["n_trk", "time"], tc_m),
                                      vmax_trks = (["n_trk", "time"], tc_vmax),
                                      tc_month = (["n_trk"], tc_months),
-                                     tc_basins = (["n_trk"], tc_basins),                                     
+                                     tc_basins = (["n_trk"], tc_basins),
                                      tc_years = (["n_trk"], tc_years),
                                      seeds_per_month = (["year", "basin", "month"], n_seeds)),
                     coords = dict(n_trk = range(tc_lon.shape[0]), time = ts_output,
