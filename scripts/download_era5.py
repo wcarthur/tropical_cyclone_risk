@@ -15,9 +15,9 @@ sys.path.append(parent)
 
 import namelist
 
-year_start = 1979
-year_end = 2014
-fn_base = '/glade/scratch/abolivar/tc_risk/input/ERA5/standard'
+year_start = int(namelist.start_year)
+year_end = int(namelist.end_year)
+fn_base = namelist.base_directory
 os.makedirs(fn_base, exist_ok = True)
 
 def request_file(fn, req_type, req):
@@ -37,7 +37,7 @@ def f_request(year):
     fn_dir = '%s/%d' % (fn_base, year)
     if not os.path.exists(fn_dir):
         os.makedirs(fn_dir)
-    
+
     sst_fn = '%s/era5_sst_monthly_%d.nc' % (fn_dir, year)
     sp_fn = '%s/era5_sp_monthly_%d.nc' % (fn_dir, year)
     q_fn = '%s/era5_q_monthly_%d.nc' % (fn_dir, year)
@@ -165,7 +165,15 @@ def f_request(year):
     request_file(v_fn, 'reanalysis-era5-pressure-levels', req_v)
 
 years = list(range(year_start, year_end+1))
-p = Pool(6)
-output = p.map(f_request, years)
-p.close()
-p.join()
+
+
+# On Windows the subprocesses will import (i.e. execute) the main module at start.
+# You need to insert an `if __name__ == '__main__':`` guard in the main module
+# to avoid creating subprocesses recursively.
+if __name__ == "__main__":
+    p = Pool(6)
+    with p:
+        p.map(f_request, years)
+#output = p.map(f_request, years)
+#p.close()
+#p.join()
