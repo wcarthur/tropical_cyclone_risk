@@ -64,7 +64,6 @@ described by "b" (can be global), in the year.
 """
 def run_tracks(year, n_tracks, b, data_ts):
     # Load thermodynamic and ocean variables.
-    print('AJB: {}'.format(year))
     fn_th = calc_thermo.get_fn_thermo()
     ds = xr.open_dataset(fn_th)
     dt_year_start = datetime.datetime(year-1, 12, 31)
@@ -246,7 +245,7 @@ def run_tracks(year, n_tracks, b, data_ts):
             # of the time-integrated state (a parameter), we recompute it.
             # TODO: Remove this redudancy by pre-caclulating the env. wind.
             for i in range(len(track_lon)):
-                tc_env_wnds[nt, i, :] = fast._env_winds(track_lon[i], track_lat[i], fast.t_s[i], data_ts)
+                tc_env_wnds[nt, i, :] = fast._env_winds(track_lon[i], track_lat[i], fast.t_s[i])
             vmax = tc_wind.axi_to_max_wind(track_lon, track_lat, fast.dt_track,
                                            v_track, tc_env_wnds[nt, 0:n_time, :])
             if np.nanmax(vmax) >= namelist.seed_vmax_threshold_ms:

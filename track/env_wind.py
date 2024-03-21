@@ -51,7 +51,7 @@ def deep_layer_winds(env_wnds):
     u250 = env_wnds[:, var_names.index('ua250_Mean')]
     v250 = env_wnds[:, var_names.index('va250_Mean')]
     u850 = env_wnds[:, var_names.index('ua850_Mean')]
-    v850 = env_wnds[:, var_names.index('va850_Mean')]   
+    v850 = env_wnds[:, var_names.index('va850_Mean')]
     return (u250, v250, u850, v850)
 
 """
@@ -62,7 +62,7 @@ def read_env_wnd_fn(fn_wnd_stat):
     var_Var = wind_cov_matrix_names()
 
     ds = xr.open_dataset(fn_wnd_stat)
-    wnd_Mean = [ds[x] for x in var_Mean] 
+    wnd_Mean = [ds[x] for x in var_Mean]
     wnd_Cov = [['' for i in range(len(var_Mean))] for j in range(len(var_Mean))]
     for i in range(len(var_Mean)):
         for j in range(len(var_Mean)):
@@ -86,7 +86,7 @@ def gen_wind_mean_cov():
     # control over the files being opened.
     fns_ua = input._glob_prefix(input.get_u_key())
     fns_va = input._glob_prefix(input.get_v_key())
-   
+
     lazy_results = []
     for i in range(len(fns_ua)):
         lazy_result = dask.delayed(wnd_stat_wrapper)((fns_ua[i], fns_va[i]))
@@ -116,7 +116,7 @@ def gen_wind_mean_cov():
 
 def wnd_stat_wrapper(args):
     fn_u, fn_v = args
-
+    print(fn_u, fn_v)
     dt_start, dt_end = input.get_bounding_times()
     ds_ua = input._load_var_daily(fn_u)
     ds_va = input._load_var_daily(fn_v)
@@ -166,8 +166,6 @@ Computes mean and covariance of environmental winds across a month.
 def calc_wnd_stat(ua, va, dt):
     cYear = dt.year
     cMonth = dt.month
-    
-    print('AJB: current yr/mon: '+str(cYear)+'/'+str(cMonth))
 
     if cMonth == 12:
         tEnd = datetime.datetime(cYear + 1, 1, 1)
