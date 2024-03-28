@@ -23,5 +23,5 @@ export PYTHONPATH=$PYTHONPATH:/scratch/$PROJECT/$USER/python/lib/python3.10/site
 
 start=$(date +%s)
 mpirun -np $PBS_NCPUS python3 run.py GL > tcr.log 2>&1
-end=$(date +s)
+end=$(date +%s)
 echo "Elapsed Time: $(($end-$start)) seconds"
