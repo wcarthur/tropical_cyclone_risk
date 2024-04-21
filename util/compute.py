@@ -227,12 +227,15 @@ def run_tracks(year, n_tracks, b, data_ts):
             track_lat = res.y[1]
             v_track = res.y[2]
             m_track = res.y[3]
-
             # If the TC has not reached the threshold m/s after 2 days, throw it away.
             # The TC must also reach the genesis threshold during it's entire lifetime.
+            # Eliminate all tracks that approach within 2 degrees of the equator (WCA)
             v_thresh = namelist.seed_v_threshold_ms
             v_thresh_2d = np.interp(2*24*60*60, res.t, v_track.flatten())
-            is_tc = np.logical_and(np.any(v_track >= v_thresh), v_thresh_2d >= namelist.seed_v_2d_threshold_ms)
+            is_tc = np.logical_and.reduce([
+                np.any(v_track >= v_thresh),
+                v_thresh_2d >= namelist.seed_v_2d_threshold_ms,
+                np.min(np.abs(track_lat)) > 2.0])
 
         if is_tc:
             n_time = len(track_lon)
