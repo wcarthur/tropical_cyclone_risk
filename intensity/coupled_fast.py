@@ -25,7 +25,7 @@ class Coupled_FAST(bam_track.BetaAdvectionTrack):
         self.epsilon = 0.33                         # thermodynamic efficiency
         self.kappa = 0.1                            # dimensionless parameter
         self.beta = 1 - self.epsilon - self.kappa   # dimensionless parameter
-
+        self.nwaves = namelist.N_sine_waves
         # Read in high-resolution bathymetry and land masks.
         self.f_bath = geo.read_bathy(basin)
         self.f_land = geo.read_land(basin)
@@ -231,7 +231,7 @@ class Coupled_FAST(bam_track.BetaAdvectionTrack):
         bam_track.random_seed()
 
         # Create the weights for the beta-advection model (across time).
-        self.Fs = self.gen_synthetic_f()
+        self.Fs = self.gen_synthetic_f(self.nwaves)
         self.Fs_i = interp1d(self.t_s, self.Fs, axis = 1)
 
         # If the ventilation index is above some threshold, do not integrate.

@@ -219,6 +219,7 @@ def run_tracks(year, n_tracks, b, data_ts):
         rh_init = float(m_init_fx[time_seed-1].ev(gen_lon, gen_lat))
         m_init = np.maximum(0, namelist.f_mInit(rh_init))
         fast.h_bl = namelist.atm_bl_depth[basin_ids[basin_idx]]
+        fast.nwaves = namelist.N_sine_waves[basin_ids[basin_idx]]
         res = fast.gen_track(gen_lon, gen_lat, v_init, m_init)
 
         is_tc = False

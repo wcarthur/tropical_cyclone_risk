@@ -125,8 +125,8 @@ class BetaAdvectionTrack:
 
     """ Generate the random Fourier Series """
 
-    def gen_synthetic_f(self):
-        N_series = 15                       # number of sine waves
+    def gen_synthetic_f(self, N_series=15):
+        #N_series = 15                      # number of sine waves
         return (gen_f(N_series, self.T_Fs, self.t_s, self.nWLvl))
 
     """ Calculate environmental winds at a point and time. """

@@ -9,7 +9,7 @@ Namelist file that serves as the configuration file for the TC-risk model.
 src_directory = os.path.dirname(os.path.abspath(__file__))
 base_directory = '%s/data/era5' % src_directory
 output_directory = '%s/data/era5' % src_directory
-exp_name = 'test'
+exp_name = 'varnwaves'
 # For now, we support either 'GCM' or 'ERA5'. Different file types and variable
 # names can be added by modifying the "input.py" file and adding the appropriate
 # variable key words in the structure var_keys.
@@ -34,13 +34,13 @@ var_keys = {'ERA5': {'sst': 'sst', 'mslp': 'sp', 'temp': 't',
 data_ts = 'monthly'      # timestep of input data, 'monthly' or '6-hourly'
                          # resolutions are supported.
 ########################### Parallelism Parameters ##########################
-n_procs = 16              # number of processes to use in dask
+n_procs = 96              # number of processes to use in dask
 
 ############################ TC Risk Parameters #############################
 """
 These parameters configure the dates for the TC-risk model.
 """
-start_year = 2001                     # year to start downscaling
+start_year = 1981                     # year to start downscaling
 start_month = 1                       # month of start_year to start downscaling
 end_year = 2021                       # year to stop downscaling
 end_month = 12                        # month of end_year to stop downscaling
@@ -50,7 +50,7 @@ These parameters configure the output.
 """
 output_interval_s = 3600              # output interval of tracks, seconds (does not change time integration)
 total_track_time_days = 15            # total time to integrate tracks, days
-tracks_per_year = 20                  # total number of tracks to simulate per year
+tracks_per_year = 100                  # total number of tracks to simulate per year
 
 """
 These parameters configure thermodynamics and thermodynamic constants.
@@ -74,25 +74,28 @@ steering_levels = [250, 850]
 steering_coefs = [0.2, 0.8]           # constant steering coefficients if not coupled
 coupled_track = True                  # track coupled to intensity; overrides alpha
 y_alpha = [0.17, 0.83]                # value of steering coefficient at 0 knots
-m_alpha = [0.0025, -0.0025]           # change of each coefficient per unit storm intensity, 1 / kts
-alpha_max = [0.41, 0.78]              # maximum value of each steering coefficient (coupled track only)
-alpha_min = [0.22, 0.59]              # minimum value of each steering coefficient (coupled track only)
+m_alpha = [0.00207, -0.00207]         # change of each coefficient per unit storm intensity, 1 / kts
+alpha_max = [0.367, 0.793]            # maximum value of each steering coefficient (coupled track only)
+alpha_min = [0.207, 0.633]            # minimum value of each steering coefficient (coupled track only)
 u_beta = -1.0                         # zonal beta drift, m/s
 v_beta = 2.5                          # meridional beta drift, m/s
-T_days = 20                           # period of the fourier series, days
+T_days = 10                           # period of the fourier series, days
 seed_v_init_ms = 5                    # initial seed v intensity, m/s
 seed_v_2d_threshold_ms = 6.5          # seed v threshold after 2 days, m/s
 seed_v_threshold_ms = 15              # seed v threshold over entire lifetime, m/s
 seed_vmax_threshold_ms = 18           # seed vmax threshold over entire lifetime, m/s
 # Atmospheric boundary layer depth (FAST), m
 atm_bl_depth = {'NA': 1400.0, 'EP': 1400.0, 'WP': 1800.0, 'AU': 1800.0,
-                'SI': 1600.0, 'SP': 2000.0, 'NI': 1500.0, 'SH': 1800.0}
+                'SI': 1600.0, 'SP': 2000.0, 'NI': 1500.0}
+# (WCA) Number of sine waves for the Fourier Series: 
+N_sine_waves = {'NA': 15, 'EP': 15, 'WP': 15, 'AU': 25,
+                'SI': 20, 'SP': 30, 'NI': 15}
 log_chi_fac = 0.5                     # addition to chi in log space
 chi_fac = 1.3                         # addition to chi
 lat_vort_fac = 2                      # sets where vorticity threshold decays toward equator
 lat_vort_power = {'NA': 6, 'EP': 6,   # power decay towards the equator
-                  'WP': 3.5, 'AU': 6, 'SH': 6,
-                  'SI': 3, 'SP': 7, 'NI': 2.5}
+                  'WP': 3.5, 'AU': 8,
+                  'SI': 6, 'SP': 10, 'NI': 2.5}
 # Initial m based on large-scale relative humidity
 f_mInit = lambda rh: 0.20 / (1 + np.exp(-(rh - 0.55) * 10)) + 0.125
 
@@ -109,7 +112,6 @@ Identifiers: EP - Eastern Pacific
              NI - North Indian
              SI - South Indian
              SP - South Pacific
-             SH - Southern Hemisphere
              WP - Western Pacific
              GL - Global (no basin)
 """
@@ -119,7 +121,6 @@ basin_bounds = {'EP': ['180E', '0N', '290E', '60N'],
                 'SI': ['20E', '45S', '100E', '0S'],
                 'AU': ['100E', '45S', '180E', '0S'],
                 'SP': ['180E', '45S', '250E', '0S'],
-                'SH': ['20E', '45S', '250E', '0S'],
                 'WP': ['100E', '0N', '180E', '60N'],
-                'GL': ['0E', '90S', '360E', '90N']}
+                'GL': ['0E', '45S', '360E', '0S']}  # WCA: Change to Southern Hemisphere
 
