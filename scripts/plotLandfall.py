@@ -253,10 +253,12 @@ obslf = gates.copy()
 obslf = countCrossings(obslf, obstcdf)
 
 print("Sampling synthetic catalogue")
-nsamples = 100
+nsamples = 100  # Number of samples to generate
 lfsamples = np.zeros((nsamples, len(gates)))
 for n in range(nsamples):
     tracks = []
+    # For each year, we sample from the randomly generated time series of
+    # annual TC counts
     for year in range(yearS, yearE+1):
         yidx = np.where(yr_trks==year)[0]
         ntcs = np.random.choice(freqsamples[freqsamples['year']==year]['ntcs'])
@@ -286,7 +288,7 @@ for n in range(nsamples):
     gatedf = countCrossings(gatedf, trackdf)
     lfsamples[n, :] = gatedf['count']
 
-lfsamples = lfsamples / lfsamples.sum(axis=1)[:,None]
+lfsamples = lfsamples / lfsamples.sum(axis=1)[:, None]
 lfmean = lfsamples.mean(axis=0)
 lfmed = np.percentile(lfsamples, 0.5, axis=0)
 lfstd = lfsamples.std(axis=0)
