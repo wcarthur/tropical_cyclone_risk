@@ -3,6 +3,7 @@ import datetime
 import numpy as np
 import os
 import xarray as xr
+from windspharm.xarray import VectorWind
 
 import namelist
 from util import input
@@ -100,7 +101,7 @@ def gen_wind_mean_cov():
 
     var_Mean = wind_mean_vector_names()
     var_Var = sum([[x for x in y if len(x) > 0] for y in wind_cov_matrix_names()], [])
-    var_names = var_Mean + var_Var
+    var_names = var_Mean + var_Var + ['dudyDLM_Mean', 'dvdxDLM_Mean', 'dzdyDLM_Mean']
     var_dict = dict()
     for i in range(len(var_names)):
         var_dict[var_names[i]] = da[:, i, :, :].rename(var_names[i])
@@ -189,9 +190,13 @@ def calc_wnd_stat(ua, va, dt):
     month_wnds = [ua250_month, va250_month,
                   ua850_month, va850_month]
     month_mean_wnds = [0] * len(month_wnds)
+    month_mean_vort = [0] * 3 # Check dims of month_mean_winds
+    uadlm = 0.8 * ua850_month + 0.2 * ua250_month; vadlm = 0.8 * va850_month + 0.2 * va250_month;
+    month_mean_vort[:] = compute_mean_vorticity(uadlm, vadlm)
     month_var_wnds = [[np.empty(0) for i in range(len(month_wnds))] for j in range(len(month_wnds))]
     for i in range(len(month_wnds)):
         month_mean_wnds[i] = month_wnds[i].mean(dim = "time")
+
         for j in range(0, i+1):
             if i == j:
                 month_var_wnds[i][j] = month_wnds[i].var(dim = "time")
@@ -200,6 +205,7 @@ def calc_wnd_stat(ua, va, dt):
 
     wnd_vars = [[x for x in y if len(x) > 0] for y in month_var_wnds]
     stats = sum(wnd_vars, month_mean_wnds)
+    stats = stats + month_mean_vort
     wnd_stats = np.zeros((len(stats),) + month_mean_wnds[0].shape)
     for i in range(len(stats)):
         wnd_stats[i, :, :] = stats[i]
@@ -212,3 +218,19 @@ def calc_wnd_stat(ua, va, dt):
                 lat=(ua[input.get_lat_key()].values)))
 
     return wnd_stats
+
+def compute_mean_vorticity(ua, va,):
+    """
+    Compute mean vorticity of a wind field
+    
+    """
+    w = VectorWind(ua, va, legfunc="computed")
+    vrt, div = w.vrtdiv(truncation=17)
+    dzdx, dzdy = w.gradient(vrt.mean(dim="time"), truncation=17)
+    dudx, dudy = w.gradient(ua.mean(dim="time"), truncation=17)
+    dvdx, dvdy = w.gradient(va.mean(dim="time"), truncation=17)
+    dudy = dudy.assign_coords({'level': 850})
+    dvdx = dvdx.assign_coords({'level': 850})
+    dzdy = dzdy.assign_coords({'level': 850})
+    
+    return dudy, dvdx, dzdy
