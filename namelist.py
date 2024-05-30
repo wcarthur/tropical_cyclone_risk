@@ -73,13 +73,13 @@ These parameters configure track and intensity constants.
 steering_levels = [250, 850]
 steering_coefs = [0.2, 0.8]           # constant steering coefficients if not coupled
 coupled_track = True                  # track coupled to intensity; overrides alpha
-y_alpha = [0.17, 0.83]                # value of steering coefficient at 0 knots
-m_alpha = [0.00207, -0.00207]         # change of each coefficient per unit storm intensity, 1 / kts
-alpha_max = [0.367, 0.793]            # maximum value of each steering coefficient (coupled track only)
-alpha_min = [0.207, 0.633]            # minimum value of each steering coefficient (coupled track only)
+y_alpha = [0.1464, 0.8536]                # value of steering coefficient at 0 knots
+m_alpha = [0.00231, -0.00231]         # change of each coefficient per unit storm intensity, 1 / kts
+alpha_max = [0.3716, 0.8086]            # maximum value of each steering coefficient (coupled track only)
+alpha_min = [0.1914, 0.6284]            # minimum value of each steering coefficient (coupled track only)
 u_beta = -1.0                         # zonal beta drift, m/s
 v_beta = 2.5                          # meridional beta drift, m/s
-T_days = 10                           # period of the fourier series, days
+T_days = 15                           # period of the fourier series, days
 seed_v_init_ms = 5                    # initial seed v intensity, m/s
 seed_v_2d_threshold_ms = 6.5          # seed v threshold after 2 days, m/s
 seed_v_threshold_ms = 15              # seed v threshold over entire lifetime, m/s
@@ -87,7 +87,7 @@ seed_vmax_threshold_ms = 18           # seed vmax threshold over entire lifetime
 # Atmospheric boundary layer depth (FAST), m
 atm_bl_depth = {'NA': 1400.0, 'EP': 1400.0, 'WP': 1800.0, 'AU': 1800.0,
                 'SI': 1600.0, 'SP': 2000.0, 'NI': 1500.0}
-# (WCA) Number of sine waves for the Fourier Series: 
+# (WCA) Number of sine waves for the Fourier Series:
 N_sine_waves = {'NA': 15, 'EP': 15, 'WP': 15, 'AU': 25,
                 'SI': 20, 'SP': 30, 'NI': 15}
 log_chi_fac = 0.5                     # addition to chi in log space
