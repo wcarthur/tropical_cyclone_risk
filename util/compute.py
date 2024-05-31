@@ -162,6 +162,8 @@ def run_tracks(year, n_tracks, b, data_ts):
     tc_v = np.full((n_tracks, n_steps), np.nan)
     tc_m = np.full((n_tracks, n_steps), np.nan)
     tc_vmax = np.full((n_tracks, n_steps), np.nan)
+    tc_rmax = np.full((n_tracks, n_steps), np.nan)
+    tc_r34 = np.full((n_tracks, n_steps), np.nan)
     tc_env_wnds = np.full((n_tracks, n_steps, cpl_fast[0].nWLvl), np.nan)
     tc_month = np.full(n_tracks, np.nan)
     tc_basin = np.full(n_tracks, "", dtype = 'U2')
@@ -252,8 +254,11 @@ def run_tracks(year, n_tracks, b, data_ts):
                 tc_env_wnds[nt, i, :] = fast._env_winds(track_lon[i], track_lat[i], fast.t_s[i])
             vmax = tc_wind.axi_to_max_wind(track_lon, track_lat, fast.dt_track,
                                            v_track, tc_env_wnds[nt, 0:n_time, :])
+            rmax, r34 = tc_wind.wind_radii(track_lat, vmax)
             if np.nanmax(vmax) >= namelist.seed_vmax_threshold_ms:
                 tc_vmax[nt, 0:n_time] = vmax
+                tc_rmax[nt, 0:n_time] = rmax
+                tc_r34[nt, 0:n_time] = r34
                 tc_month[nt] = time_seed
                 tc_basin[nt] = basin_ids[basin_idx]
                 nt += 1
@@ -264,7 +269,7 @@ def run_tracks(year, n_tracks, b, data_ts):
     seed_tries = pd.concat(seeds_df_list)
     tc_tries = pd.concat(tcs_df_list)
 
-    return((tc_lon, tc_lat, tc_v, tc_m, tc_vmax, tc_env_wnds, tc_month, tc_basin, n_seeds, seed_tries, tc_tries))
+    return((tc_lon, tc_lat, tc_v, tc_m, tc_vmax, tc_rmax, tc_r34, tc_env_wnds, tc_month, tc_basin, n_seeds, seed_tries, tc_tries))
 
 """
 Runs the downscaling model in basin "basin_id" according to the
@@ -292,14 +297,16 @@ def run_downscaling(basin_id, data_ts):
     tc_v = np.concatenate([x[2] for x in out], axis = 0)
     tc_m = np.concatenate([x[3] for x in out], axis = 0)
     tc_vmax = np.concatenate([x[4] for x in out], axis = 0)
-    tc_env_wnds = np.concatenate([x[5] for x in out], axis = 0)
-    tc_months = np.concatenate([x[6] for x in out], axis = 0)
-    tc_basins = np.concatenate([x[7] for x in out], axis = 0)
+    tc_rmax = np.concatenate([x[5] for x in out], axis = 0)
+    tc_r34 = np.concatenate([x[6] for x in out], axis = 0)
+    tc_env_wnds = np.concatenate([x[7] for x in out], axis = 0)
+    tc_months = np.concatenate([x[8] for x in out], axis = 0)
+    tc_basins = np.concatenate([x[9] for x in out], axis = 0)
     tc_years = np.concatenate([[i+yearS]*out[i][0].shape[0] for i in range(len(out))], axis = 0)
-    n_seeds = np.array([x[8] for x in out])
+    n_seeds = np.array([x[10] for x in out])
 
-    seed_tries = pd.concat([x[9] for x in out], axis = 0)
-    tc_tries = pd.concat([x[10] for x in out], axis = 0)
+    seed_tries = pd.concat([x[11] for x in out], axis = 0)
+    tc_tries = pd.concat([x[12] for x in out], axis = 0)
 
     total_time_s = namelist.total_track_time_days*24*60*60
     n_steps_output = int(total_time_s / namelist.output_interval_s) + 1
@@ -323,6 +330,8 @@ def run_downscaling(basin_id, data_ts):
                                      v_trks = (["n_trk", "time"], tc_v),
                                      m_trks = (["n_trk", "time"], tc_m),
                                      vmax_trks = (["n_trk", "time"], tc_vmax),
+                                     rmax_trks = (["n_trk", "time"], tc_rmax),
+                                     r34_trks = (["n_trk", "time"], tc_r34),
                                      tc_month = (["n_trk"], tc_months),
                                      tc_basins = (["n_trk"], tc_basins),
                                      tc_years = (["n_trk"], tc_years),
