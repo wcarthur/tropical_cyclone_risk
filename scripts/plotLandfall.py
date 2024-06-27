@@ -69,20 +69,44 @@ def isLandfall(gate, tracks):
     return tracks[crossings][landfall]
 
 def countCrossings(gates, tracks):
+    columns=['gate', 'label', 'count', 'maxlfintensity']
+    agggates = pd.DataFrame(columns=columns)
+    aggbp = [6, 12, 17, 24, 31, 36, 40, 43, 48]
+    agglabels = ['West Coast', 'Pilbara', 'Kimberley', 'Top End',
+                 'Gulf', 'NQLD', 'CQLD', 'SQLD', 'NSW']
+    aggcount = 0
+    aggvmax = 0.0
+    aidx = 0
     for i, gate in enumerate(gates.itertuples(index=False)):
         ncrossings = 0
         l = isLandfall(gate, tracks)
         ncrossings = len(l)
+
         if ncrossings > 0:
             gates.loc[i, 'count'] = ncrossings
             gates.loc[i, 'meanlfintensity'] = l['vmax'].mean()
             gates.loc[i, 'maxlfintensity'] = l['vmax'].max()
+            aggvmax = np.maximum(aggvmax, l['vmax'].max())
+
         else:
             gates.loc[i, 'count'] = 0
             gates.loc[i, 'meanlfintensity'] = np.nan
             gates.loc[i, 'maxlfintensity'] = np.nan
+
+        aggcount += ncrossings
+        if i == aggbp[aidx]:
+            agggates.loc[aidx, 'gate'] = aidx
+            agggates.loc[aidx, 'label'] = agglabels[aidx]
+            agggates.loc[aidx, 'count'] = aggcount
+            agggates.loc[aidx, 'maxlfintensity'] = aggvmax
+            aggcount = 0
+            aggvmax = 0
+            aidx += 1
     gates['prob'] = gates['count'] / gates['count'].sum()
-    return gates
+    agggates['prob'] = agggates['count'] / agggates['count'].sum()
+
+
+    return gates, agggates
 
 def load_obs_tracks():
     # Load IBTrACS data:
@@ -167,10 +191,13 @@ def load_obs_tracks():
             segment = LineString([[lons[n], lats[n]],
                                 [lons[n+1], lats[n+1]]])
             segments.append(segment)
-        df = gpd.GeoDataFrame(data=np.hstack((lons[:-1], lats[:-1], vmaxs[:-1])).reshape(3, -1).T,
-                            columns=["Longitude", "Latitude", "vmax"], geometry=segments)
+        df = gpd.GeoDataFrame(
+            data=np.hstack((lons[:-1], lats[:-1], vmaxs[:-1])).reshape(3, -1).T,
+            columns=["Longitude", "Latitude", "vmax"], geometry=segments)
         df['tcnum'] = i
-        df['category'] = pd.cut(df['vmax'], bins=[0, 17, 32, 42, 49, 58, 70, 1000], labels=["TD", "TS", "1", "2", "3", "4", "5"])
+        df['category'] = pd.cut(df['vmax'],
+                                bins=[0, 17, 32, 42, 49, 58, 70, 1000],
+                                labels=["TD", "TS", "1", "2", "3", "4", "5"])
         obstcs.append(df)
 
     obstcdf = pd.concat(obstcs)
@@ -193,12 +220,14 @@ ds = xr.open_mfdataset(fn_tracks, concat_dim = "n_trk", combine = "nested",
                         data_vars="minimal", drop_variables = "seeds_per_month")
 
 drop_vars = ["lon_trks", "lat_trks", "u250_trks", "v250_trks", "u850_trks", "v850_trks",
-                 "v_trks", "m_trks", "vmax_trks", "tc_month", "tc_years", "tc_basins"]
+                 "v_trks", "m_trks", "vmax_trks", "rmax_trks", "r34_trks",
+                 "tc_month", "tc_years", "tc_basins"]
 ds_seeds = xr.open_mfdataset(fn_tracks, concat_dim = "year", combine = "nested",
                             data_vars="minimal", drop_variables = drop_vars)
 yearS = namelist.start_year
 yearE = namelist.end_year
 n_sim = len(fn_tracks)
+nyears = yearE - yearS + 1
 ntrks_per_year = namelist.tracks_per_year
 ntrks_per_sim = ntrks_per_year * (yearE - yearS + 1)
 seeds_per_month_basin = ds_seeds['seeds_per_month']
@@ -244,17 +273,17 @@ lon_min = 20; lon_max = 250;
 lat_min = -45; lat_max = 0;
 
 
-freqsamples = pd.read_csv(r"data\tccount.samples.csv")
+freqsamples = pd.read_csv(r"C:\WorkSpace\tropical_cyclone_risk\data\tccount.samples.csv")
 freqsamples['year'] = freqsamples['year']+1981
 
 print("Loading observed landfalls")
 obstcdf = load_obs_tracks()
 obslf = gates.copy()
-obslf = countCrossings(obslf, obstcdf)
-
+obslf, obsagglf = countCrossings(obslf, obstcdf)
 print("Sampling synthetic catalogue")
-nsamples = 100  # Number of samples to generate
+nsamples = 500  # Number of samples to generate
 lfsamples = np.zeros((nsamples, len(gates)))
+agglfsamples = np.zeros((nsamples, len(obsagglf)))
 for n in range(nsamples):
     tracks = []
     # For each year, we sample from the randomly generated time series of
@@ -285,10 +314,11 @@ for n in range(nsamples):
             tracks.append(df)
     trackdf = pd.concat(tracks)
     gatedf = gates.copy()
-    gatedf = countCrossings(gatedf, trackdf)
+    gatedf, gateaggdf = countCrossings(gatedf, trackdf)
     lfsamples[n, :] = gatedf['count']
+    agglfsamples[n, :] = gateaggdf['count']
 
-lfsamples = lfsamples / lfsamples.sum(axis=1)[:, None]
+#lfsamples = lfsamples / lfsamples.sum(axis=1)[:, None]
 lfmean = lfsamples.mean(axis=0)
 lfmed = np.percentile(lfsamples, 0.5, axis=0)
 lfstd = lfsamples.std(axis=0)
@@ -296,20 +326,46 @@ lf10 = np.percentile(lfsamples, 10, axis=0)
 lf90 = np.percentile(lfsamples, 90, axis=0)
 lferr = np.vstack((lf10, lf90))
 
+agglfsamples = agglfsamples / agglfsamples.sum(axis=1)[:, None]
+
+alfmean = agglfsamples.mean(axis=0)
+alfmed = np.percentile(agglfsamples, 0.5, axis=0)
+alfstd = agglfsamples.std(axis=0)
+alf10 = np.percentile(agglfsamples, 10, axis=0)
+alf90 = np.percentile(agglfsamples, 90, axis=0)
+alferr = np.vstack((alf10, alf90))
 
 # Plot boxplot of the landfall rates:
 fig, ax = plt.subplots(1, 1, figsize=(12, 6), sharex=True)
 cor = np.corrcoef(obslf['prob'], lfmed)[0, 1]
-ax.boxplot(lfsamples, patch_artist=True,
+ax.boxplot(lfsamples / nyears, patch_artist=True,
            medianprops=dict(color='k'),
            flierprops=dict(marker='.', markersize=5))
-ax.plot(obslf.gate, obslf['prob'],'r*', markersize=10, label="Obs (1980 - 2021)")
+ax.plot(obslf.gate, obslf['count'] / nyears,'r*', markersize=10, label="Obs (1980 - 2021)")
 ax.set_xlim((0, 48))
 ax.set_xticks(np.arange(0, 49,2))
-ax.set_yticks(np.arange(0, 0.15, .01))
-ax.set_ylim((0, 0.15))
-ax.set_ylabel('Probability of landfall')
+ymin=0; ymax=np.ceil(np.max(obslf['count'] / nyears))
+ax.set_yticks(np.linspace(0, ymax+.1, 5))
+ax.set_ylim((0, ymax))
+ax.set_ylabel('Landfall count')
 ax.set_xticklabels(gatedf['label'][::2], rotation='vertical')
 ax.text(0.05, 0.93, 'r = %0.3f' % cor, transform = ax.transAxes,)
 ax.legend()
 savefig("%s/%s/landfall.png" % (namelist.base_directory, exp_name), bbox_inches='tight')
+
+# Plot boxplot of the aggregated landfall rates:
+fig, ax = plt.subplots(1, 1, figsize=(12, 6), sharex=True)
+#cor = np.corrcoef(obsagglf['prob'], alfmed)[0, 1]
+ax.boxplot(agglfsamples, patch_artist=True,
+           medianprops=dict(color='k'),
+           flierprops=dict(marker='.', markersize=5))
+ax.plot(obsagglf.gate, obsagglf['prob'],'r*', markersize=10, label="Obs (1980 - 2021)")
+ax.set_xlim((0, 8))
+ax.set_xticks(np.arange(0, 9))
+#ax.set_yticks(np.arange(0, 0.15, .01))
+#ax.set_ylim((0, 0.15))
+ax.set_ylabel('Probability of landfall')
+ax.set_xticklabels(gateaggdf['label'], rotation='vertical')
+#ax.text(0.05, 0.93, 'r = %0.3f' % cor, transform = ax.transAxes,)
+ax.legend()
+savefig("%s/%s/agglandfall.png" % (namelist.base_directory, exp_name), bbox_inches='tight')
