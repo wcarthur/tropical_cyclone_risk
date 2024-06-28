@@ -27,6 +27,13 @@ def wind_mean_vector_names():
     return var_Mean
 
 """
+Generate list of variable names for monthly mean gradients.
+"""
+def wind_gradient_names():
+    var_Gradient = ['dudyDLM_Mean', 'dvdxDLM_Mean', 'dzdyDLM_Mean']
+    return var_Gradient
+
+"""
 Generates variable names in the monthly wind covariance matrix.
 """
 def wind_cov_matrix_names():
@@ -61,9 +68,11 @@ Read the mean and covariance of the upper/lower level zonal and meridional winds
 def read_env_wnd_fn(fn_wnd_stat):
     var_Mean = wind_mean_vector_names()
     var_Var = wind_cov_matrix_names()
+    var_Grad = wind_gradient_names()
 
     ds = xr.open_dataset(fn_wnd_stat)
     wnd_Mean = [ds[x] for x in var_Mean]
+    wnd_Grad = [ds[x] for x in var_Grad]
     wnd_Cov = [['' for i in range(len(var_Mean))] for j in range(len(var_Mean))]
     for i in range(len(var_Mean)):
         for j in range(len(var_Mean)):
@@ -72,7 +81,7 @@ def read_env_wnd_fn(fn_wnd_stat):
             else:
                 wnd_Cov[i][j] = ds[var_Var[i][j]]
 
-    return (wnd_Mean, wnd_Cov)
+    return (wnd_Mean, wnd_Cov, wnd_Grad)
 
 """
 Generate the wind mean and covariance matrices used to advect
@@ -222,15 +231,15 @@ def calc_wnd_stat(ua, va, dt):
 def compute_mean_vorticity(ua, va,):
     """
     Compute mean vorticity of a wind field
-    
+
     """
     w = VectorWind(ua, va, legfunc="computed")
-    vrt, div = w.vrtdiv(truncation=17)
-    dzdx, dzdy = w.gradient(vrt.mean(dim="time"), truncation=17)
-    dudx, dudy = w.gradient(ua.mean(dim="time"), truncation=17)
-    dvdx, dvdy = w.gradient(va.mean(dim="time"), truncation=17)
+    vrt, div = w.vrtdiv(truncation=30)
+    dzdx, dzdy = w.gradient(vrt.mean(dim="time"), truncation=30)
+    dudx, dudy = w.gradient(ua.mean(dim="time"), truncation=30)
+    dvdx, dvdy = w.gradient(va.mean(dim="time"), truncation=30)
     dudy = dudy.assign_coords({'level': 850})
     dvdx = dvdx.assign_coords({'level': 850})
     dzdy = dzdy.assign_coords({'level': 850})
-    
-    return dudy, dvdx, dzdy
+
+    return dudy*10e5, dvdx*10e5, dzdy*10e11
