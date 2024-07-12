@@ -23,7 +23,8 @@ export PYTHONPATH=$PYTHONPATH:/scratch/$PROJECT/$USER/python/lib/python3.10/site
 
 # Set the number of processors for use in Dask to match the number available on the job
 sed -i "s/n_procs = [0-9]\+/n_procs = $PBS_NCPUS/" namelist.py
+exp_name=$(sed -n 's/^exp_name = "\(.*\)"/\1/p' namelist.py)
 start=$(date +%s)
-python3 run.py GL 10 > tcr.nwaves.log 2>&1
+python3 run.py GL 11 > tcr.$exp_name.log 2>&1
 end=$(date +%s)
 echo "Elapsed Time: $(($end-$start)) seconds"

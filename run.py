@@ -11,7 +11,7 @@ import os
 import shutil
 import namelist
 import sys
-from scripts import generate_land_masks, plotLMI, plotTracks
+from scripts import generate_land_masks#, plotLMI, plotTracks
 from util import compute
 
 import warnings
@@ -25,7 +25,7 @@ if __name__ == '__main__':
     shutil.copyfile('./namelist.py', '%s/namelist.py' % f_base)
 
     generate_land_masks.generate_land_masks()
-    #compute.compute_downscaling_inputs()
+    compute.compute_downscaling_inputs()
 
     print('Running tracks for basin %s...' % sys.argv[1])
     if len(sys.argv) < 3:
@@ -34,6 +34,6 @@ if __name__ == '__main__':
         for n in range(int(sys.argv[2])):
             compute.run_downscaling(sys.argv[1], namelist.data_ts)
 
-        plotLMI.plotLMI()
-        plotTracks.plotTracks(ntracks=namelist.tracks_per_year * int(sys.argv[2]))
-        plotTracks.plotGenesis(ntracks=namelist.tracks_per_year * int(sys.argv[2]))
+        #plotLMI.plotLMI()
+        #plotTracks.plotTracks(ntracks=namelist.tracks_per_year * int(sys.argv[2]))
+        #plotTracks.plotGenesis(ntracks=namelist.tracks_per_year * int(sys.argv[2]))

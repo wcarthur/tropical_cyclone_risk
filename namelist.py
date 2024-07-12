@@ -9,7 +9,7 @@ Namelist file that serves as the configuration file for the TC-risk model.
 src_directory = os.path.dirname(os.path.abspath(__file__))
 base_directory = '%s/data/era5' % src_directory
 output_directory = '%s/data/era5' % src_directory
-exp_name = 'dragcoef'
+exp_name = "dragcoef"
 # For now, we support either 'GCM' or 'ERA5'. Different file types and variable
 # names can be added by modifying the "input.py" file and adding the appropriate
 # variable key words in the structure var_keys.
