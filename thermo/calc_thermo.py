@@ -126,13 +126,14 @@ def gen_thermo():
     )
 
     n_chunks = namelist.n_procs
+    scheduler = namelist.scheduler
     chunks = np.array_split(ds_times, np.minimum(n_chunks, np.floor(len(ds_times) / 2)))
     lazy_results = []
     for i in range(len(chunks)):
         lazy_result = dask.delayed(compute_thermo)(chunks[i][0], chunks[i][-1])
         lazy_results.append(lazy_result)
     out = dask.compute(*lazy_results,
-                       scheduler="processes",
+                       scheduler=scheduler,
                        num_workers=n_chunks)
 
     # Clean up and process output.

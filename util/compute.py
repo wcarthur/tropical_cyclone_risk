@@ -206,7 +206,7 @@ def run_tracks(year, n_tracks, b, data_ts):
             # If PI is less than 35 m/s, do not integrate, but treat as a seed.
             pi_gen = float(fast.f_vpot.ev(gen_lon, gen_lat))
             lat_vort_power = namelist.lat_vort_power[basin_ids[basin_idx]]
-            prob_lowlat = np.power(np.minimum(np.maximum((np.abs(gen_lat) - namelist.lat_vort_fac) / 12.0, 0), 1), lat_vort_power)
+            prob_lowlat = np.power(np.minimum(np.maximum((np.abs(gen_lat) - namelist.lat_vort_fac) / 15.0, 0), 1), lat_vort_power)
             rand_lowlat = np.random.uniform(0, 1, 1)[0]
             if (np.nanmax(basin_val) > 1e-3) and (rand_lowlat < prob_lowlat):
                 n_seeds[basin_idx, time_seed-1] += 1
@@ -278,6 +278,7 @@ settings in the namelist.txt file.
 def run_downscaling(basin_id, data_ts):
     n_tracks = namelist.tracks_per_year   # number of tracks per year
     n_procs = namelist.n_procs
+    scheduler = namelist.scheduler
     b = basins.TC_Basin(basin_id)
     yearS = namelist.start_year
     yearE = namelist.end_year
@@ -289,7 +290,7 @@ def run_downscaling(basin_id, data_ts):
         lazy_results.append(lazy_result)
 
     s = time.time()
-    out = dask.compute(*lazy_results, scheduler = 'processes', num_workers = n_procs)
+    out = dask.compute(*lazy_results, scheduler = scheduler, num_workers = n_procs)
 
     # Process the output and save as a netCDF file.
     tc_lon = np.concatenate([x[0] for x in out], axis = 0)
