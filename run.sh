@@ -3,7 +3,7 @@
 #PBS -N tcr
 #PBS -m ae
 #PBS -M craig.arthur@ga.gov.au
-#PBS -lwalltime=12:00:00
+#PBS -lwalltime=2:00:00
 #PBS -lmem=380GB,ncpus=96,jobfs=4000MB
 #PBS -joe
 #PBS -W umask=002
@@ -25,6 +25,6 @@ export PYTHONPATH=$PYTHONPATH:/scratch/$PROJECT/$USER/python/lib/python3.10/site
 sed -i "s/n_procs = [0-9]\+/n_procs = $PBS_NCPUS/" namelist.py
 exp_name=$(sed -n 's/^exp_name = "\(.*\)"/\1/p' namelist.py)
 start=$(date +%s)
-python3 run.py GL 11 > tcr.$exp_name.log 2>&1
+python3 run.py GL 10 > tcr.$exp_name.log 2>&1
 end=$(date +%s)
 echo "Elapsed Time: $(($end-$start)) seconds"
