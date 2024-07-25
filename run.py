@@ -11,7 +11,7 @@ import os
 import shutil
 import namelist
 import sys
-from scripts import generate_land_masks #, plotLMI, plotTracks
+from scripts import generate_land_masks#, plotLMI, plotTracks
 from util import compute
 
 import warnings
@@ -35,3 +35,4 @@ if __name__ == '__main__':
 
         #plotLMI.plotLMI()
         #plotTracks.plotTracks(ntracks=namelist.tracks_per_year * int(sys.argv[2]))
+        #plotTracks.plotGenesis(ntracks=namelist.tracks_per_year * int(sys.argv[2]))

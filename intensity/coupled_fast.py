@@ -130,6 +130,12 @@ class Coupled_FAST(bam_track.BetaAdvectionTrack):
         chi = self._calc_chi(clon, clat)
         return (self._calc_S(env_wnds) * chi)
 
+    def _calc_Ck(self, clon, clat):
+        if self._get_over_land(clon, clat):
+            Ck = namelist.Cd_land
+        else:
+            Ck = self.Ck
+        return Ck
     """ Define the first ODE in the coupled set, Equation 2.
     For now, use a drag coefficient, constant boundary layer depth,
     constant thermodynamic efficiency (Equation 8), and constant
@@ -143,9 +149,10 @@ class Coupled_FAST(bam_track.BetaAdvectionTrack):
         alpha = self._calc_alpha(clon, clat, v_trans, v)
         gamma = self._calc_gamma(alpha)
         beta = self._calc_beta()
+        Ck = self._calc_Ck(clon, clat)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
-            dvdt = (0.5 * self.Ck / self.h_bl * (alpha * beta * (v_pot ** 2) * (m ** 3) -
+            dvdt = (0.5 * Ck / self.h_bl * (alpha * beta * (v_pot ** 2) * (m ** 3) -
                                                       (1 - gamma * (m ** 3)) * (v ** 2)))
         return dvdt if ~np.isnan(dvdt) else 0
 
@@ -175,9 +182,10 @@ class Coupled_FAST(bam_track.BetaAdvectionTrack):
     """
     def _dmdt(self,  clon, clat, v, m, env_wnds, t):
         venti = self._calc_venti(t, clon, clat, env_wnds)
+        Ck = self._calc_Ck(clon, clat)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
-            dmdt = 0.5 * self.Ck / self.h_bl * ((1 - m) * v - venti * m)
+            dmdt = 0.5 * Ck / self.h_bl * ((1 - m) * v - venti * m)
         return(dmdt)
 
     """ Calculate the steering coefficients. """

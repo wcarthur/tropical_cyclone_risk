@@ -9,7 +9,7 @@ Namelist file that serves as the configuration file for the TC-risk model.
 src_directory = os.path.dirname(os.path.abspath(__file__))
 base_directory = '%s/data/era5' % src_directory
 output_directory = '%s/data/era5' % src_directory
-exp_name = 'beta'
+exp_name = "beta"
 # For now, we support either 'GCM' or 'ERA5'. Different file types and variable
 # names can be added by modifying the "input.py" file and adding the appropriate
 # variable key words in the structure var_keys.
@@ -35,7 +35,7 @@ data_ts = 'monthly'      # timestep of input data, 'monthly' or '6-hourly'
                          # resolutions are supported.
 ########################### Parallelism Parameters ##########################
 n_procs = 96              # number of processes to use in dask
-
+scheduler = 'processes'   # specify the dask scheduler to use
 ############################ TC Risk Parameters #############################
 """
 These parameters configure the dates for the TC-risk model.
@@ -59,6 +59,7 @@ p_midlevel = 60000
 PI_reduc = 0.80
 Ck = 1.2e-3
 Cd = 1.2e-3
+Cd_land = 4.7e-3
 select_thermo = 1   # 1 for pseudoadiabatic, 2 for reversible thermodynamics
 select_interp = 2   # 1 for computation, 2 for interpolation
 
@@ -73,16 +74,16 @@ These parameters configure track and intensity constants.
 steering_levels = [250, 850]
 steering_coefs = [0.2, 0.8]           # constant steering coefficients if not coupled
 
-# Coefficients for climatological gradients. 
-# Intercept, dudy, dvdx, dzdy, dudp, dvdp. 
+# Coefficients for climatological gradients.
+# Intercept, dudy, dvdx, dzdy, dudp, dvdp.
 # These coefficients are for SH storms only - WCA 2024-06-28
 gradient_coefs = [[-0.603, -0.113, -0.169, 0.0, -0.099, -0.062],
                   [-0.075, -0.041, 0.0, -0.029, -0.033, -0.093]]
 coupled_track = True                  # track coupled to intensity; overrides alpha
-y_alpha = [0.17, 0.83]                # value of steering coefficient at 0 knots
-m_alpha = [0.00207, -0.00207]         # change of each coefficient per unit storm intensity, 1 / kts
-alpha_max = [0.367, 0.793]            # maximum value of each steering coefficient (coupled track only)
-alpha_min = [0.207, 0.633]            # minimum value of each steering coefficient (coupled track only)
+y_alpha = [0.1464, 0.8536]            # value of steering coefficient at 0 knots
+m_alpha = [0.00231, -0.00231]         # change of each coefficient per unit storm intensity, 1 / kts
+alpha_max = [0.3716, 0.8086]          # maximum value of each steering coefficient (coupled track only)
+alpha_min = [0.1914, 0.6284]          # minimum value of each steering coefficient (coupled track only)
 u_beta = -1.0                         # zonal beta drift, m/s
 v_beta = 2.5                          # meridional beta drift, m/s
 T_days = 20                           # period of the fourier series, days
@@ -95,7 +96,7 @@ atm_bl_depth = {'NA': 1400.0, 'EP': 1400.0, 'WP': 1800.0, 'AU': 1800.0,
                 'SI': 1600.0, 'SP': 2000.0, 'NI': 1500.0}
 # (WCA) Number of sine waves for the Fourier Series:
 N_sine_waves = {'NA': 15, 'EP': 15, 'WP': 15, 'AU': 25,
-                'SI': 20, 'SP': 30, 'NI': 15}
+                'SI': 15, 'SP': 25, 'NI': 15}
 log_chi_fac = 0.5                     # addition to chi in log space
 chi_fac = 1.3                         # addition to chi
 lat_vort_fac = 2                      # sets where vorticity threshold decays toward equator
