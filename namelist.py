@@ -51,6 +51,7 @@ These parameters configure the output.
 output_interval_s = 3600              # output interval of tracks, seconds (does not change time integration)
 total_track_time_days = 15            # total time to integrate tracks, days
 tracks_per_year = 20                  # total number of tracks to simulate per year
+tracks_per_year = 20                  # total number of tracks to simulate per year
 
 """
 These parameters configure thermodynamics and thermodynamic constants.
@@ -59,6 +60,7 @@ p_midlevel = 60000
 PI_reduc = 0.80
 Ck = 1.2e-3
 Cd = 1.2e-3
+Cd_land = 4.7e-3
 Cd_land = 4.7e-3
 select_thermo = 1   # 1 for pseudoadiabatic, 2 for reversible thermodynamics
 select_interp = 2   # 1 for computation, 2 for interpolation
@@ -86,6 +88,7 @@ alpha_max = [0.3716, 0.8086]          # maximum value of each steering coefficie
 alpha_min = [0.1914, 0.6284]          # minimum value of each steering coefficient (coupled track only)
 u_beta = -1.0                         # zonal beta drift, m/s
 v_beta = 2.5                          # meridional beta drift, m/s
+T_days = 20                           # period of the fourier series, days
 T_days = 20                           # period of the fourier series, days
 seed_v_init_ms = 5                    # initial seed v intensity, m/s
 seed_v_2d_threshold_ms = 6.5          # seed v threshold after 2 days, m/s
