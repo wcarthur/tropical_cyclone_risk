@@ -11,6 +11,7 @@ dependencies:
   - matplotlib
   - scipy
   - xarray
+  - metpy
   - cftime
   - python
   - pip:

@@ -16,6 +16,7 @@ from intensity import coupled_fast, ocean
 from thermo import calc_thermo
 from track import env_wind
 from wind import tc_wind
+from genesis import calc_genesis
 from util import basins, input, mat
 
 """
@@ -32,6 +33,12 @@ def compute_downscaling_inputs():
     print('Computing thermodynamic variables...')
     s = time.time()
     calc_thermo.gen_thermo()
+    e = time.time()
+    print('Time Elapsed: %f s' % (e - s))
+
+    print("Computing genesis parameter")
+    s = time.time()
+    calc_genesis.gen_genesis()
     e = time.time()
     print('Time Elapsed: %f s' % (e - s))
 
@@ -84,6 +91,17 @@ def run_tracks(year, n_tracks, b, data_ts):
         chi = chi.reindex({'lat': lat[::-1]})
         lat = lat[::-1]
 
+    # Load genesis parameter:
+    fn_tcgp = calc_genesis.get_fn_tcgp()
+    gds = xr.open_dataset(fn_tcgp)
+    gds = gds.sel(time=slice(dt_bounds[0], dt_bounds[1])).load()
+    glon = gds['longitude'].data
+    glat = gds['latitude'].data
+    tcgp = gds['tcgp']
+    if (glat[0] - glat[1]) > 0:
+        tcgp = tcgp.reindex({'lat': glat[::-1]})
+        glat = glat[::-1]
+
     # Load the basin bounds and genesis points.
     basin_ids = np.array(sorted([k for k in namelist.basin_bounds if k != 'GL']))
     f_basins = {}
@@ -106,6 +124,8 @@ def run_tracks(year, n_tracks, b, data_ts):
     if data_ts == 'monthly':
         cpl_fast = [0] * 12
         m_init_fx = [0] * 12
+        tcgp_month = [0] * 12
+        tcgp_init_fx = [0] * 12
         n_seeds = np.zeros((len(basin_ids), 12))
 
         for i in range(12):
@@ -122,10 +142,14 @@ def run_tracks(year, n_tracks, b, data_ts):
             cpl_fast[i] = coupled_fast.Coupled_FAST(fn_wnd_stat, b, ds_dt_month,
                                                     namelist.output_interval_s, T_s)
             cpl_fast[i].init_fields(lon, lat, chi_month, vpot_month, mld_month, strat_month)
+            gds_dt_month = input.convert_from_datetime(gds, [dt_month])[0]
+            tcgp_month[i] = np.nan_to_num(tcgp.interp(time=gds_dt_month).data, 0)
+            tcgp_init_fx[i] = mat.interp2_fx(tcgp['longitude'], tcgp['latitude'], tcgp_month[i])
 
     if data_ts == '6-hourly':
         cpl_fast = [0] * 1460
         m_init_fx = [0] * 1460
+        tcgp_6hr = [0] * 1460
         n_seeds = np.zeros((len(basin_ids), 1460))
 
         # AJB: Creating array of dates to draw from and removing leap day
@@ -153,6 +177,8 @@ def run_tracks(year, n_tracks, b, data_ts):
             cpl_fast[i] = coupled_fast.Coupled_FAST(fn_wnd_stat, b, ds_dt_6hr,
                                                     namelist.output_interval_s, T_s)
             cpl_fast[i].init_fields(lon, lat, chi_6hr, vpot_6hr, mld_month, strat_month)
+            gds_dt_6hr = input.convert_from_datetime(gds, [dt_6hr])[0]
+            tcgp_6hr[i] = tcgp.interp(time=gds_dt_6hr)
 
     # Output vectors.
     nt = 0
@@ -183,7 +209,9 @@ def run_tracks(year, n_tracks, b, data_ts):
             y_max = np.sin(np.pi / 180 * lat_max)
             gen_lon = np.random.uniform(b_bounds[0], b_bounds[2], 1)[0]
             gen_lat = np.arcsin(np.random.uniform(y_min, y_max, 1)[0]) * 180 / np.pi
-            while f_b.ev(gen_lon, gen_lat) < 1e-2:
+            rand_loc = np.random.uniform(0, 10, 1)[0]
+
+            while (f_b.ev(gen_lon, gen_lat) < 1e-2):
                 gen_lon = np.random.uniform(b_bounds[0], b_bounds[2], 1)[0]
                 gen_lat = np.arcsin(np.random.uniform(y_min, y_max, 1)[0]) * 180 / np.pi
 
@@ -193,7 +221,6 @@ def run_tracks(year, n_tracks, b, data_ts):
             if data_ts == '6-hourly':
                 # Randomly seed the 6-hour timestep.
                 time_seed = np.random.randint(1,1461)
-
             fast = cpl_fast[time_seed - 1]
 
             # Find basin of genesis location and switch H_bl.
@@ -208,7 +235,10 @@ def run_tracks(year, n_tracks, b, data_ts):
             lat_vort_power = namelist.lat_vort_power[basin_ids[basin_idx]]
             prob_lowlat = np.power(np.minimum(np.maximum((np.abs(gen_lat) - namelist.lat_vort_fac) / 15.0, 0), 1), lat_vort_power)
             rand_lowlat = np.random.uniform(0, 1, 1)[0]
-            if (np.nanmax(basin_val) > 1e-3) and (rand_lowlat < prob_lowlat):
+
+            rand_tcgp = np.random.uniform(0, np.nanmax(tcgp_month[time_seed - 1]), 1)[0]
+            tcgp = tcgp_init_fx[time_seed - 1].ev(gen_lon, gen_lat)
+            if (np.nanmax(basin_val) > 1e-3) and (rand_tcgp < tcgp):
                 n_seeds[basin_idx, time_seed-1] += 1
                 seed_df = pd.DataFrame([[gen_lat,gen_lon,time_seed,year]],columns=['lat','lon','month','year'])
                 seeds_df_list.append(seed_df)

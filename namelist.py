@@ -9,7 +9,7 @@ Namelist file that serves as the configuration file for the TC-risk model.
 src_directory = os.path.dirname(os.path.abspath(__file__))
 base_directory = '%s/data/era5' % src_directory
 output_directory = '%s/data/era5' % src_directory
-exp_name = "dragcoef"
+exp_name = "genesis"
 # For now, we support either 'GCM' or 'ERA5'. Different file types and variable
 # names can be added by modifying the "input.py" file and adding the appropriate
 # variable key words in the structure var_keys.
@@ -35,7 +35,7 @@ data_ts = 'monthly'      # timestep of input data, 'monthly' or '6-hourly'
                          # resolutions are supported.
 ########################### Parallelism Parameters ##########################
 n_procs = 96              # number of processes to use in dask
-
+scheduler='single-threaded'
 ############################ TC Risk Parameters #############################
 """
 These parameters configure the dates for the TC-risk model.
@@ -62,6 +62,12 @@ Cd = 1.2e-3
 Cd_land = 4.7e-3
 select_thermo = 1   # 1 for pseudoadiabatic, 2 for reversible thermodynamics
 select_interp = 2   # 1 for computation, 2 for interpolation
+
+"""
+These parameters configure the genesis parameter calculations.
+"""
+genesis_levels = [200, 700, 850]       # hPa
+genesis_rh_level = 700                 # hPa
 
 """
 These parameters configure track and intensity constants.
@@ -123,5 +129,5 @@ basin_bounds = {'EP': ['180E', '0N', '290E', '60N'],
                 'AU': ['100E', '45S', '180E', '0S'],
                 'SP': ['180E', '45S', '250E', '0S'],
                 'WP': ['100E', '0N', '180E', '60N'],
-                'GL': ['0E', '45S', '360E', '0S']}  # WCA: Change to Southern Hemisphere
+                'GL': ['0E', '45S', '360E', '0.1S']}  # WCA: Change to Southern Hemisphere
 

@@ -3,6 +3,7 @@ import datetime
 import numpy as np
 import os
 import xarray as xr
+from windspharm.xarray import VectorWind
 
 import namelist
 from util import input
@@ -178,10 +179,17 @@ def calc_wnd_stat(ua, va, dt):
                   (input.convert_to_datetime(ua, ua['time'].values) < tEnd))
 
     lvl = ua[input.get_lvl_key()]
-    if lvl.units in ['millibars', 'hPa']:
-        p_upper = 250; p_lower = 850;
-    else:
-        p_upper = 25000; p_lower = 85000;
+    p_upper, p_lower = namelist.steering_levels
+    gp_lower, gp_mid, gp_upper = namelist.genesis_levels
+
+    wnd_levels = list(set(p_upper, p_lower, gp_upper, gp_mid, gp_lower))
+
+    if lvl.units not in ['millibars', 'hPa']:
+        wnd_levels = [lev * 100 for lev in wnd_levels]
+    #if lvl.units in ['millibars', 'hPa']:
+    #    p_upper = 250; p_lower = 850;
+    #else:
+    #    p_upper = 25000; p_lower = 85000;
 
     # If time step is less than one day, group by day.
     dt_step = (np.timedelta64(1, 'D') - (ua['time'][1] - ua['time'][0]).data) / np.timedelta64(1, 's')
@@ -194,14 +202,14 @@ def calc_wnd_stat(ua, va, dt):
         va_month = va.sel(time = month_mask)
         t_unit = 'time'
 
-    # Compute the daily averages
-    ua250_month = ua_month.sel({input.get_lvl_key(): p_upper})
-    va250_month = va_month.sel({input.get_lvl_key(): p_upper})
-    ua850_month = ua_month.sel({input.get_lvl_key(): p_lower})
-    va850_month = va_month.sel({input.get_lvl_key(): p_lower})
+    # Compute the daily averages:
+    month_wnds = []
+    for lev in wnd_levels:
+        ualev_month = ua_month.sel({input.get_lvl_key(): lev})
+        valev_month = va_month.sel({input.get_lvl_key(): lev})
+        month_wnds.append(ualev_month)
+        month_wnds.append(valev_month)
 
-    month_wnds = [ua250_month, va250_month,
-                  ua850_month, va850_month]
     month_mean_wnds = [0] * len(month_wnds)
     month_var_wnds = [[np.empty(0) for i in range(len(month_wnds))] for j in range(len(month_wnds))]
     for i in range(len(month_wnds)):
@@ -214,7 +222,19 @@ def calc_wnd_stat(ua, va, dt):
 
     wnd_vars = [[x for x in y if len(x) > 0] for y in month_var_wnds]
     stats = sum(wnd_vars, month_mean_wnds)
+
+    # Calculate deep-layer mean relative voricity:
+    ua850 = ua_month.sel({input.get_lvl_key(): p_lower})
+    va850 = va_month.sel({input.get_lvl_key(): p_lower})
+    ua250 = ua_month.sel({input.get_lvl_key(): p_upper})
+    va250 = va_month.sel({input.get_lvl_key(): p_upper})
+    month_mean_vort = [0] * 3
+    uadlm = 0.8 * ua850 + 0.2 * ua250; vadlm = 0.8 * va850 + 0.2 * va250
+    month_mean_vort[:] = compute_mean_vorticity(uadlm, vadlm)
+
+    stats = stats + month_mean_vort
     wnd_stats = np.zeros((len(stats),) + month_mean_wnds[0].shape)
+
     for i in range(len(stats)):
         wnd_stats[i, :, :] = stats[i]
 
@@ -226,3 +246,19 @@ def calc_wnd_stat(ua, va, dt):
                 lat=(ua[input.get_lat_key()].values)))
 
     return wnd_stats
+
+def compute_mean_vorticity(ua, va,):
+    """
+    Compute mean vorticity of a wind field
+
+    """
+    w = VectorWind(ua, va, legfunc="computed")
+    vrt, div = w.vrtdiv(truncation=30)
+    dzdx, dzdy = w.gradient(vrt.mean(dim="time"), truncation=30)
+    dudx, dudy = w.gradient(ua.mean(dim="time"), truncation=30)
+    dvdx, dvdy = w.gradient(va.mean(dim="time"), truncation=30)
+    dudy = dudy.assign_coords({'level': 850})
+    dvdx = dvdx.assign_coords({'level': 850})
+    dzdy = dzdy.assign_coords({'level': 850})
+
+    return dudy*10e5, dvdx*10e5, dzdy*10e11
