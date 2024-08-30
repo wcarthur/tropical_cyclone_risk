@@ -79,6 +79,12 @@ These parameters configure track and intensity constants.
 # length as the number of levels.
 steering_levels = [250, 850]
 steering_coefs = [0.2, 0.8]           # constant steering coefficients if not coupled
+
+# Coefficients for climatological gradients.
+# Intercept, dudy, dvdx, dzdy, dudp, dvdp.
+# These coefficients are for SH storms only - WCA 2024-06-28
+gradient_coefs = [[-0.603, -0.113, -0.169, 0.0, -0.099, -0.062],
+                  [-0.075, -0.041, 0.0, -0.029, -0.033, -0.093]]
 coupled_track = True                  # track coupled to intensity; overrides alpha
 y_alpha = [0.1464, 0.8536]                # value of steering coefficient at 0 knots
 m_alpha = [0.00231, -0.00231]         # change of each coefficient per unit storm intensity, 1 / kts

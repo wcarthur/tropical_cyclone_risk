@@ -26,7 +26,6 @@ if __name__ == '__main__':
 
     generate_land_masks.generate_land_masks()
     compute.compute_downscaling_inputs()
-
     print('Running tracks for basin %s...' % sys.argv[1])
     if len(sys.argv) < 3:
         compute.run_downscaling(sys.argv[1], namelist.data_ts)

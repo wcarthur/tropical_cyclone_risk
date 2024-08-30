@@ -27,6 +27,13 @@ def wind_mean_vector_names():
     return var_Mean
 
 """
+Generate list of variable names for monthly mean gradients.
+"""
+def wind_gradient_names():
+    var_Gradient = ['dudyDLM_Mean', 'dvdxDLM_Mean', 'dzdyDLM_Mean']
+    return var_Gradient
+
+"""
 Generates variable names in the monthly wind covariance matrix.
 """
 def wind_cov_matrix_names():
@@ -61,12 +68,14 @@ Read the mean and covariance of the upper/lower level zonal and meridional winds
 def read_env_wnd_fn(fn_wnd_stat, dt_s = None, dt_e = None):
     var_Mean = wind_mean_vector_names()
     var_Var = wind_cov_matrix_names()
+    var_Grad = wind_gradient_names()
 
     if dt_s is None:
         ds = xr.open_dataset(fn_wnd_stat)
     else:
         ds = xr.open_dataset(fn_wnd_stat).sel(time = slice(dt_s, dt_e))
     wnd_Mean = [ds[x] for x in var_Mean]
+    wnd_Grad = [ds[x] for x in var_Grad]
     wnd_Cov = [['' for i in range(len(var_Mean))] for j in range(len(var_Mean))]
     for i in range(len(var_Mean)):
         for j in range(len(var_Mean)):
@@ -75,7 +84,7 @@ def read_env_wnd_fn(fn_wnd_stat, dt_s = None, dt_e = None):
             else:
                 wnd_Cov[i][j] = ds[var_Var[i][j]]
 
-    return (wnd_Mean, wnd_Cov)
+    return (wnd_Mean, wnd_Cov, wnd_Grad)
 
 """
 Generate the wind mean and covariance matrices used to advect
@@ -104,7 +113,7 @@ def gen_wind_mean_cov():
 
     var_Mean = wind_mean_vector_names()
     var_Var = sum([[x for x in y if len(x) > 0] for y in wind_cov_matrix_names()], [])
-    var_names = var_Mean + var_Var
+    var_names = var_Mean + var_Var + ['dudyDLM_Mean', 'dvdxDLM_Mean', 'dzdyDLM_Mean']
     var_dict = dict()
     for i in range(len(var_names)):
         var_dict[var_names[i]] = da[:, i, :, :].rename(var_names[i])
@@ -201,6 +210,7 @@ def calc_wnd_stat(ua, va, dt):
         ua_month = ua.sel(time = month_mask)
         va_month = va.sel(time = month_mask)
         t_unit = 'time'
+
 
     # Compute the daily averages:
     month_wnds = []

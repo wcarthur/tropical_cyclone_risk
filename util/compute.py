@@ -233,7 +233,7 @@ def run_tracks(year, n_tracks, b, data_ts):
             # If PI is less than 35 m/s, do not integrate, but treat as a seed.
             pi_gen = float(fast.f_vpot.ev(gen_lon, gen_lat))
             lat_vort_power = namelist.lat_vort_power[basin_ids[basin_idx]]
-            prob_lowlat = np.power(np.minimum(np.maximum((np.abs(gen_lat) - namelist.lat_vort_fac) / 15.0, 0), 1), lat_vort_power)
+            prob_lowlat = np.power(np.minimum(np.maximum((np.abs(gen_lat) - namelist.lat_vort_fac) / 10.0, 0), 1), lat_vort_power)
             rand_lowlat = np.random.uniform(0, 1, 1)[0]
 
             rand_tcgp = np.random.uniform(0, np.nanmax(tcgp_month[time_seed - 1]), 1)[0]

@@ -67,6 +67,7 @@ class BetaAdvectionTrack:
         self.v_beta = namelist.v_beta           # meridional beta drift speed
         self.nLvl = len(namelist.steering_levels)
         self.nWLvl = self.nLvl * 2
+        self.nGLvl = 3                          # Fixed number of gradient fields
         self.dt_start = dt_start
         self.basin = basin
         self.var_names = env_wind.wind_mean_vector_names()
@@ -86,8 +87,9 @@ class BetaAdvectionTrack:
         return mat.interp2_fx(lon_b, lat_b, np.nan_to_num(var_b))
 
     def _load_wnd_stat(self):
-        wnd_Mean, wnd_Cov = env_wind.read_env_wnd_fn(self.fn_wnd_stat)
+        wnd_Mean, wnd_Cov, wnd_Grad = env_wind.read_env_wnd_fn(self.fn_wnd_stat)
         self.wnd_Mean_Fxs = [0]*len(wnd_Mean)
+        self.wnd_Grad_Fxs = [0]*len(wnd_Grad)
         self.wnd_Cov_Fxs = [
             ['' for i in range(len(wnd_Cov))] for j in range(len(wnd_Cov[0]))]
         ds = xr.open_dataset(self.fn_wnd_stat)
@@ -105,11 +107,13 @@ class BetaAdvectionTrack:
                 if j <= i:
                     self.wnd_Cov_Fxs[i][j] = self._interp_basin_field(
                         wnd_Cov[i][j].interp(time=self.dt_start))
+        for i in range(len(wnd_Grad)):
+            self.wnd_Grad_Fxs[i] = self._interp_basin_field(
+                wnd_Grad[i].interp(time=self.dt_start))
 
     def interp_wnd_mean_cov(self, clon, clat, ct):
         wnd_mean = np.zeros(self.nWLvl)
         wnd_cov = np.zeros((self.nWLvl, self.nWLvl))
-
         # Only interpolate the lower trianglular matrix.
         for i in range(0, self.nWLvl):
             wnd_mean[i] = self.wnd_Mean_Fxs[i].ev(clon, clat)
@@ -122,6 +126,13 @@ class BetaAdvectionTrack:
                 wnd_cov[i, j] = wnd_cov[j, i]
 
         return (wnd_mean, wnd_cov)
+
+    def interp_grad_clim(self, clon, clat, ct):
+        wnd_grad = np.zeros(self.nGLvl)
+        for i in range(0, self.nGLvl):
+            wnd_grad[i] = self.wnd_Grad_Fxs[i].ev(clon, clat)
+
+        return wnd_grad
 
     """ Generate the random Fourier Series """
 
@@ -152,21 +163,30 @@ class BetaAdvectionTrack:
             wnds = wnd_mean
             return wnds
 
+    """ Calculate climatological vorticity gradients at a point and time """
+
+    def _clim_winds(self, clon, clat, ts):
+        if np.isnan(clon) or np.isnan(ts):
+            return np.zeros(self.nGLvl)
+
+        ct = self.datetime_start + datetime.timedelta(seconds=ts)
+        wnd_grad = self.interp_grad_clim(clon, clat, ct)
+        return wnd_grad
+
     """ Calculate the translational speeds from the beta advection model """
 
-    def _step_bam_track(self, clon, clat, ts, steering_coefs):
+    def _step_bam_track(self, clon, clat, ts, steering_coefs, gradient_coefs):
         # Include a hard stop for latitudes above 80 degrees.
         # Ensures that solve_ivp does not go past the domain bounds.
         if np.abs(clat) >= 80:
             return (np.zeros(2), np.zeros(self.nWLvl))
-        wnds = self._env_winds(clon, clat, ts)
-
+        wnds = self._env_winds(clon, clat, ts)        
+        u_beta, v_beta = self._calc_beta_motion(clon, clat, ts, gradient_coefs)
         v_bam = np.zeros(2)
         w_lat = np.cos(np.deg2rad(clat))
         v_beta_sgn = np.sign(clat) * self.v_beta
-
-        v_bam[0] = np.dot(wnds[self.u_Mean_idxs], steering_coefs) + self.u_beta * w_lat
-        v_bam[1] = np.dot(wnds[self.v_Mean_idxs], steering_coefs) + v_beta_sgn * w_lat
+        v_bam[0] = np.dot(wnds[self.u_Mean_idxs], steering_coefs) + u_beta * w_lat
+        v_bam[1] = np.dot(wnds[self.v_Mean_idxs], steering_coefs) + v_beta * w_lat
         return(v_bam, wnds)
 
     """ Calculate the steering coefficients. """
@@ -176,6 +196,21 @@ class BetaAdvectionTrack:
         steering_coefs = np.array(namelist.steering_coefs)
         return steering_coefs
 
+    """ Calculate gradient coefficients """
+    def _calc_gradient_coefs(self):
+        gradient_coefs = np.array(namelist.gradient_coefs)
+        return gradient_coefs
+    
+    """ Calculate beta motion """
+    def _calc_beta_motion(self, clon, clat, ts, gradient_coefs):
+        wnds = self._env_winds(clon, clat, ts)
+        uS = np.diff(wnds[self.u_Mean_idxs])
+        vS = np.diff(wnds[self.v_Mean_idxs])
+        wnd_grad = np.append(self._clim_winds(clon, clat, ts), np.array([uS, vS]))
+        wnd_grad = np.append(np.array([1]), wnd_grad)
+        u_beta, v_beta = np.dot(wnd_grad, gradient_coefs.T)
+        return u_beta, v_beta
+        
     """ Generate a track with a starting position of (clon, clat) """
 
     def gen_track(self, clon, clat):
@@ -195,7 +230,9 @@ class BetaAdvectionTrack:
         lonC, latC = clon, clat
         for ts in range(0, self.total_steps):
             (v_bam, wind_track[ts, :]) = self._step_bam_track(
-                lonC, latC, ts, self._calc_steering_coefs())
+                lonC, latC, ts,
+                self._calc_steering_coefs(),
+                self._calc_gradient_coefs())
             v_trans_track[ts] = v_bam
             dx = v_bam[0] * self.dt_track
             dy = v_bam[1] * self.dt_track
