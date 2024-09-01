@@ -44,19 +44,19 @@ def _xi(ds: xr.Dataset):
     - :math:`\Omega` is the rotational frequency of the Earth
 
     :param ds: `xr.Dataset` containing monthly mean wind data at 850, 700 hPa
-    :return: _description_
+    :return: `xr.Dataarray` containing values of vorticity ratio :math:`\xi`
     :rtype: xr.DataArray
     """
 
     R = mpconst.earth_avg_radius
     omega = mpconst.earth_avg_angular_vel
 
-    avrt = mpcalc.absolute_vorticity(
+    avrt700 = mpcalc.absolute_vorticity(
         ds['ua700_Mean'],
         ds['va700_Mean']
     )
     dedy, _ = mpcalc.gradient(
-        avrt, axes=[
+        avrt700, axes=[
             input.get_lat_key(),
             input.get_lon_key()]
     )

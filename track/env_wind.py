@@ -3,7 +3,7 @@ import datetime
 import numpy as np
 import os
 import xarray as xr
-from windspharm.xarray import VectorWind
+import metpy.calc as mpcalc
 
 import namelist
 from util import input
@@ -250,13 +250,41 @@ def calc_wnd_stat(ua, va, dt):
 def compute_mean_vorticity(ua, va,):
     """
     Compute mean vorticity of a wind field
+    
+    :param ua: `xr.DataArray` of u-component of wind
+    :param va: `xr.DataArray` of v-component of wind
+    
+    :return: meridional gradient of zonal wind, zonal gradient of 
+    meridional wind and meridional gradient of vorticity. 
+    
+    These values are scaled by 10^5, 10^5 and 10^11 respectively, 
+    for use in the steering flow calculations. These values are not
+    used in the calculation of the genesis parameter.
+    
+    Wind data are smoothed with two passes of a 9-point smoother before
+    calculating vorticity & gradients.
 
     """
-    w = VectorWind(ua, va, legfunc="computed")
-    vrt, div = w.vrtdiv(truncation=30)
-    dzdx, dzdy = w.gradient(vrt.mean(dim="time"), truncation=30)
-    dudx, dudy = w.gradient(ua.mean(dim="time"), truncation=30)
-    dvdx, dvdy = w.gradient(va.mean(dim="time"), truncation=30)
+    uasm = mpcalc.smooth_n_point(ua, 9, 2)
+    vasm = mpcalc.smooth_n_point(va, 9, 2)
+    
+    vrt = mpcalc.vorticity(uasm, vasm)
+    dzdy, dzdx = mpcalc.gradient(
+        vrt.mean(dim="time"),
+        axes=[input.get_lat_key(),
+              input.get_lon_key()]
+        )
+    dudy, dudx = mpcalc.gradient(
+        uasm.mean(dim="time"),
+        axes=[input.get_lat_key(),
+              input.get_lon_key()]
+        )
+    dvdy, dvdx = mpcalc.gradient(
+        vasm.mean(dim="time"),
+        axes=[input.get_lat_key(),
+              input.get_lon_key()]
+        )
+
     dudy = dudy.assign_coords({'level': 850})
     dvdx = dvdx.assign_coords({'level': 850})
     dzdy = dzdy.assign_coords({'level': 850})
