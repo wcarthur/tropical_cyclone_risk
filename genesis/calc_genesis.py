@@ -46,8 +46,8 @@ def genesis_point(tcgp, size=1):
     :rtype: list
     """
 
-    interplon = np.arange(tcgp.longitude.min(), tcgp.longitude.max()+0.1, 0.1)
-    interplat = np.arange(tcgp.latitude.min(), tcgp.latitude.max()+0.1, 0.1)
+    interplon = np.arange(tcgp.longitude.min(), tcgp.longitude.max()+0.01, 0.01)
+    interplat = np.arange(tcgp.latitude.min(), tcgp.latitude.max()+0.01, 0.01)
 
     # Step 2: Interpolate the weights onto the finer grid
     # Using xarray's interp method with method='linear' to interpolate NaNs and refine the grid
