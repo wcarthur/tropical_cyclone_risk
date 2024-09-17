@@ -70,6 +70,7 @@ Generates "n_tracks" number of tropical cyclone tracks, in basin
 described by "b" (can be global), in the year.
 """
 def run_tracks(year, n_tracks, b, data_ts):
+    print(f"Generating tracks for {year}")
     # Load thermodynamic and ocean variables.
     fn_th = calc_thermo.get_fn_thermo()
     ds = xr.open_dataset(fn_th)
@@ -98,7 +99,7 @@ def run_tracks(year, n_tracks, b, data_ts):
     glon = gds['longitude'].data
     glat = gds['latitude'].data
     tcgp = gds['tcgp']
-    if (glat[0] - glat[1]) > 0:
+    if (glat[0] - glat[1]) < 0:                                   # Make sure latitude is increasing  - possibly temporary (WCA: 2024-09-04)
         tcgp = tcgp.reindex({'lat': glat[::-1]})
         glat = glat[::-1]
 
@@ -178,7 +179,8 @@ def run_tracks(year, n_tracks, b, data_ts):
                                                     namelist.output_interval_s, T_s)
             cpl_fast[i].init_fields(lon, lat, chi_6hr, vpot_6hr, mld_month, strat_month)
             gds_dt_6hr = input.convert_from_datetime(gds, [dt_6hr])[0]
-            tcgp_6hr[i] = tcgp.interp(time=gds_dt_6hr)
+            tcgp_6hr[i] = np.nan_to_num(tcgp.interp(time=gds_dt_6hr).data, 0)
+            tcgp_init_fx[i] = mat.interp2_fx(tcgp['longitude'], tcgp['latitude'], tcgp_6hr[i])
 
     # Output vectors.
     nt = 0
@@ -236,9 +238,9 @@ def run_tracks(year, n_tracks, b, data_ts):
             prob_lowlat = np.power(np.minimum(np.maximum((np.abs(gen_lat) - namelist.lat_vort_fac) / 10.0, 0), 1), lat_vort_power)
             rand_lowlat = np.random.uniform(0, 1, 1)[0]
 
-            rand_tcgp = np.random.uniform(0, np.nanmax(tcgp_month[time_seed - 1]), 1)[0]
+            rand_tcgp = np.random.uniform(0, np.nanmax(tcgp_month), 1)[0]
             tcgp = tcgp_init_fx[time_seed - 1].ev(gen_lon, gen_lat)
-            if (np.nanmax(basin_val) > 1e-3) and (rand_tcgp < tcgp):
+            if (np.nanmax(basin_val) > 1e-3) and (rand_tcgp < tcgp): # and (rand_lowlat < prob_lowlat):
                 n_seeds[basin_idx, time_seed-1] += 1
                 seed_df = pd.DataFrame([[gen_lat,gen_lon,time_seed,year]],columns=['lat','lon','month','year'])
                 seeds_df_list.append(seed_df)
