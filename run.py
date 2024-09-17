@@ -11,7 +11,7 @@ import os
 import shutil
 import namelist
 import sys
-from scripts import generate_land_masks#, plotLMI, plotTracks
+from scripts import generate_land_masks, plotLMI, plotTracks
 from util import compute
 
 import warnings
@@ -33,6 +33,6 @@ if __name__ == '__main__':
         for n in range(int(sys.argv[2])):
             compute.run_downscaling(sys.argv[1], namelist.data_ts)
 
-        #plotLMI.plotLMI()
-        #plotTracks.plotTracks(ntracks=namelist.tracks_per_year * int(sys.argv[2]))
-        #plotTracks.plotGenesis(ntracks=namelist.tracks_per_year * int(sys.argv[2]))
+    plotLMI.plotLMI()
+    plotTracks.plotTracks(100) #ntracks=namelist.tracks_per_year * int(sys.argv[2]))
+    plotTracks.plotGenesis(500) #ntracks=namelist.tracks_per_year * int(sys.argv[2]))
