@@ -180,13 +180,13 @@ class BetaAdvectionTrack:
         # Ensures that solve_ivp does not go past the domain bounds.
         if np.abs(clat) >= 80:
             return (np.zeros(2), np.zeros(self.nWLvl))
-        wnds = self._env_winds(clon, clat, ts)        
+        wnds = self._env_winds(clon, clat, ts)
         u_beta, v_beta = self._calc_beta_motion(clon, clat, ts, gradient_coefs)
         v_bam = np.zeros(2)
         w_lat = np.cos(np.deg2rad(clat))
         v_beta_sgn = np.sign(clat) * self.v_beta
-        v_bam[0] = np.dot(wnds[self.u_Mean_idxs], steering_coefs) + u_beta * w_lat
-        v_bam[1] = np.dot(wnds[self.v_Mean_idxs], steering_coefs) + v_beta * w_lat
+        v_bam[0] = np.dot(wnds[self.u_Mean_idxs], steering_coefs) + self.u_beta * w_lat
+        v_bam[1] = np.dot(wnds[self.v_Mean_idxs], steering_coefs) + v_beta_sgn * w_lat
         return(v_bam, wnds)
 
     """ Calculate the steering coefficients. """
@@ -200,17 +200,19 @@ class BetaAdvectionTrack:
     def _calc_gradient_coefs(self):
         gradient_coefs = np.array(namelist.gradient_coefs)
         return gradient_coefs
-    
+
     """ Calculate beta motion """
     def _calc_beta_motion(self, clon, clat, ts, gradient_coefs):
         wnds = self._env_winds(clon, clat, ts)
         uS = np.diff(wnds[self.u_Mean_idxs])
         vS = np.diff(wnds[self.v_Mean_idxs])
         wnd_grad = np.append(self._clim_winds(clon, clat, ts), np.array([uS, vS]))
+        # Scaling factors:
+        wnd_grad = wnd_grad * np.array([10e5, 10e5, 10e11, 1., 1.])
         wnd_grad = np.append(np.array([1]), wnd_grad)
         u_beta, v_beta = np.dot(wnd_grad, gradient_coefs.T)
         return u_beta, v_beta
-        
+
     """ Generate a track with a starting position of (clon, clat) """
 
     def gen_track(self, clon, clat):
