@@ -281,7 +281,7 @@ obstcdf = load_obs_tracks()
 obslf = gates.copy()
 obslf, obsagglf = countCrossings(obslf, obstcdf)
 print("Sampling synthetic catalogue")
-nsamples = 500  # Number of samples to generate
+nsamples = 200  # Number of samples to generate
 lfsamples = np.zeros((nsamples, len(gates)))
 agglfsamples = np.zeros((nsamples, len(obsagglf)))
 for n in range(nsamples):

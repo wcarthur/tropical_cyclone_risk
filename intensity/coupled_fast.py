@@ -239,7 +239,6 @@ class Coupled_FAST(bam_track.BetaAdvectionTrack):
     def gen_track(self, clon, clat, v, m = None):
         # Make sure that tracks are sufficiently randomized.
         bam_track.random_seed()
-
         # Create the weights for the beta-advection model (across time).
         self.Fs = self.gen_synthetic_f(self.nwaves)
         self.Fs_i = interp1d(self.t_s, self.Fs, axis = 1)
@@ -252,12 +251,16 @@ class Coupled_FAST(bam_track.BetaAdvectionTrack):
             vent_index = S * chi / vpot
             if vent_index >= 1:
                 return None
-
+        rand = np.random.uniform(0, 1, 1)[0]
         def tc_dissipates(t, y):
+            minlat = np.abs(y[1])
+            lat_thresh = 5
+            theta = np.minimum(np.power(np.maximum(minlat - lat_thresh, 0) / (10 - lat_thresh), 2), 1)
+            # rand = np.random.uniform(0, 1, 1)[0]
             if not self.basin.in_basin(y[0], y[1], 1):
                 # Do not let the track wander outside the basin.
                 return 0
-            elif np.abs(y[1]) <= 2:
+            elif theta <= rand: # np.abs(y[1]) <= 2
                 # Do not let the track wander too equatorward.
                 return 0
             else:
@@ -273,5 +276,5 @@ class Coupled_FAST(bam_track.BetaAdvectionTrack):
             m_init = m
         res = solve_ivp(fun = self.dydt, t_span = (0, self.total_time), y0 = np.asarray([clon, clat, v, m_init]),
                         t_eval = np.linspace(0, self.total_time, self.total_steps),
-                        events = tc_dissipates, max_step = 86400)
+                        events = tc_dissipates, max_step = 86400, dense_output=True)
         return res
